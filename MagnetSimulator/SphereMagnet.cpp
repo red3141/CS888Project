@@ -8,6 +8,7 @@ SphereMagnet::SphereMagnet(Vec3d position, Vec3d velocity) {
 	this->position = position;
 	this->velocity = velocity;
 	this->radius = 0.05;
+	this->mass = 1;
 	this->particle_sphere = gluNewQuadric();
 }
 

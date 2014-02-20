@@ -26,6 +26,42 @@ char * sgifileformat;
 
 std::vector<SphereMagnet*> particles;
 
+// Handle collisions using penalty/repulsion forces
+void handle_collisions() {
+	const double SPRING_CONSTANT = 0.5;
+	const double DAMPING_CONSTANT = 0.85;
+
+	// Testing if two spheres are colliding is pretty simple; just
+	// check if the distance between the centres of the two spheres
+	// is less than the sum of their radii.
+	for(unsigned int i = 0; i < particles.size(); ++i) {
+		for(unsigned int j = i + 1; j < particles.size(); ++j) {
+			SphereMagnet* magnet1 = particles[i];
+			SphereMagnet* magnet2 = particles[j];
+			Vec3d displacement = magnet1->getPosition() - magnet2->getPosition();
+			double distance = mag(displacement);
+			double radiusSum = magnet1->getRadius() + magnet2->getRadius();
+
+			if(distance < radiusSum) {
+				// Apply repulsion force as a spring force, as described on
+				// page C7 of the Particle System Dynamics chapter of the
+				// Pixar course notes.
+				Vec3d velocityDifference = magnet1->getVelocity() - magnet2->getVelocity();
+				Vec3d fa = -(SPRING_CONSTANT * (distance - radiusSum) +
+					DAMPING_CONSTANT * (dot(velocityDifference, displacement)) / distance) *
+					(displacement / distance);
+				Vec3d fb = -fa;
+				Vec3d acceleration1 = fa / magnet1->getMass();
+				Vec3d acceleration2 = fb / magnet2->getMass();
+
+				magnet1->setVelocity(magnet1->getVelocity() + acceleration1);
+				magnet2->setVelocity(magnet2->getVelocity() + acceleration2);
+			}
+		}
+	}
+}
+
+
 void advance_sim() {
    
    //Update the frame label
@@ -63,7 +99,9 @@ void advance_sim() {
 	  particles[i]->setVelocity(velocity);
    }
 
+   handle_collisions();
 }
+
 
 void set_view(Gluvi::Target3D &cam)
 {
