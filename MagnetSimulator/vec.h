@@ -188,7 +188,6 @@ typedef Vec<6,unsigned short> Vec6us;
 typedef Vec<6,char>           Vec6c;
 typedef Vec<6,unsigned char>  Vec6uc;
 
-
 template<unsigned int N, class T>
 T mag2(const Vec<N,T> &a)
 {
@@ -467,6 +466,25 @@ template<unsigned int N, class T>
 inline void update_minmax(const Vec<N,T> &x, Vec<N,T> &xmin, Vec<N,T> &xmax)
 {
    for(unsigned int i=0; i<N; ++i) update_minmax(x[i], xmin[i], xmax[i]);
+}
+
+
+// Functions for matrices.
+typedef Vec<3,Vec3d> Matrix33d;
+
+template<unsigned int N, unsigned int M, unsigned int P, class T>
+Vec<N,Vec<P,T> > matrixMult(const Vec<N,Vec<M,T> > &u, const Vec<M,Vec<P,T> > &v)
+{
+	Vec<P,T> row(0);
+	Vec<N,Vec<P,T> > w(row);
+	for(int n = 0; n < N; ++n) {
+		for(int p = 0; p < P; ++p) {
+			for(int m = 0; m < M; ++m) {
+				w[n][p] += u[n][m] * v[m][p];
+			}
+		}
+	}
+	return w;
 }
 
 #endif

@@ -287,7 +287,6 @@ Gluvi::Target3D* cam_local;
 
 int main(int argc, char **argv)
 {
-
    Gluvi::init("Particle Animation", &argc, argv);
 
    glutKeyboardFunc(keyPress);
