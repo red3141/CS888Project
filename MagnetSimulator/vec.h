@@ -487,4 +487,17 @@ Vec<N,Vec<P,T> > matrixMult(const Vec<N,Vec<M,T> > &u, const Vec<M,Vec<P,T> > &v
 	return w;
 }
 
+template<unsigned int N, unsigned int M, class T>
+void makeIdentityMatrix(Vec<N,Vec<M,T> >& matrix) {
+	for(int n = 0; n < N; ++n) {
+		for(int p = 0; m < M; ++m) {
+			if(n == m) {
+				matrix[n][m] = 1;
+			} else {
+				matrix[n][m] = 0;
+			}
+		}
+	}
+}
+
 #endif

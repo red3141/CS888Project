@@ -54,8 +54,8 @@ void handle_collisions() {
 				Vec3d acceleration1 = fa / magnet1->getMass();
 				Vec3d acceleration2 = fb / magnet2->getMass();
 
-				magnet1->setVelocity(magnet1->getVelocity() + acceleration1);
-				magnet2->setVelocity(magnet2->getVelocity() + acceleration2);
+				magnet1->setLinearMomentum(magnet1->getLinearMomentum() + fa);
+				magnet2->setLinearMomentum(magnet2->getLinearMomentum() + fb);
 			}
 		}
 	}
@@ -74,29 +74,33 @@ void advance_sim() {
    //time-integrate the particles
    for(unsigned int i = 0; i < particles.size(); ++i) {
       Vec3d position = particles[i]->getPosition();
-      Vec3d velocity = particles[i]->getVelocity();
+	  Vec3d linearMomentum = particles[i]->getLinearMomentum();
+	  double mass = particles[i]->getMass();
 
       //Forward Euler time integration on position 
-      position += timestep * velocity;
+	  position += timestep * (linearMomentum / mass);
 
-      //Forward Euler time integration on velocity
-      velocity += timestep * constant_acceleration;
+      //Forward Euler time integration on linear momentum
+	  linearMomentum += timestep * constant_acceleration * mass;
    
       //process simple impulsed-based, frictionless collisions
       
       //floor
-      if(position[1] < 0 && velocity[1] < 0)
-         velocity[1] *= -coeff_restitution;
+	  if(position[1] < 0 && linearMomentum[1] < 0) {
+		 linearMomentum[1] *= -coeff_restitution;
+	  }
 
       //other walls
-      if(position[0] < 0 && velocity[0] < 0 || position[0] > 1 && velocity[0] > 0)
-         velocity[0] *= -coeff_restitution;
-      if(position[2] < 0 && velocity[2] < 0 || position[2] > 1 && velocity[2] > 0)
-         velocity[2] *= -coeff_restitution;
+	  if(position[0] < 0 && linearMomentum[0] < 0 || position[0] > 1 && linearMomentum[0] > 0) {
+		 linearMomentum[0] *= -coeff_restitution;
+	  }
+      if(position[2] < 0 && linearMomentum[2] < 0 || position[2] > 1 && linearMomentum[2] > 0) {
+		 linearMomentum[2] *= -coeff_restitution;
+	  }
 
       //save back the results
 	  particles[i]->setPosition(position);
-	  particles[i]->setVelocity(velocity);
+	  particles[i]->setLinearMomentum(linearMomentum);
    }
 
    handle_collisions();
@@ -316,17 +320,18 @@ int main(int argc, char **argv)
 
    //set up initial particle set
    int seed = 0;
+   double mass = 1.0;
    for(int i = 0; i < num_particles; ++i) {
       Vec3d position;
       position[0] = randhashf(++seed,0,1);
       position[1] = randhashf(++seed,0,1);
       position[2] = randhashf(++seed,0,1);
-      Vec3d velocity;
-      velocity[0] = randhashf(++seed,-5,5);
-      velocity[1] = randhashf(++seed,-5,5);
-      velocity[2] = randhashf(++seed,-5,5);
+	  Vec3d linearMomentum;
+	  linearMomentum[0] = mass * randhashf(++seed,-5,5);
+      linearMomentum[1] = mass * randhashf(++seed,-5,5);
+      linearMomentum[2] = mass * randhashf(++seed,-5,5);
 
-	  particles.push_back(new SphereMagnet(position, velocity));
+	  particles.push_back(new SphereMagnet(position, linearMomentum, mass));
    }
 
    Gluvi::run();

@@ -4,11 +4,11 @@
 
 using namespace std;
 
-SphereMagnet::SphereMagnet(Vec3d position, Vec3d velocity) {
+SphereMagnet::SphereMagnet(Vec3d position, Vec3d linearMomentum, double mass) {
 	this->position = position;
-	this->velocity = velocity;
+	this->linearMomentum = linearMomentum;
 	this->radius = 0.05;
-	this->mass = 1;
+	this->mass = mass;
 	this->particle_sphere = gluNewQuadric();
 }
 

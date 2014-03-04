@@ -3,19 +3,20 @@
 
 class SphereMagnet {
 	Vec3d position;
-	Vec3d velocity;
+	Vec3d linearMomentum;
 	double radius;
 	double mass;
 	GLUquadric* particle_sphere;
 
 public:
-	SphereMagnet(Vec3d position, Vec3d velocity);
+	SphereMagnet(Vec3d position, Vec3d linearMomentum, double mass);
 	~SphereMagnet();
 	Vec3d getPosition() {return position;}
-	Vec3d getVelocity() {return velocity;}
+	Vec3d getVelocity() {return linearMomentum / mass;}
+	Vec3d getLinearMomentum() {return linearMomentum;}
 	double getRadius() {return radius;}
 	double getMass() {return mass;}
 	void setPosition(Vec3d newPosition) {position = newPosition;}
-	void setVelocity(Vec3d newVelocity) {velocity = newVelocity;}
+	void setLinearMomentum(Vec3d newLinearMomentum) {linearMomentum = newLinearMomentum;}
 	void draw();
 };
