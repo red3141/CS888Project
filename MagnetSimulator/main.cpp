@@ -75,12 +75,43 @@ void advance_sim() {
    for(unsigned int i = 0; i < particles.size(); ++i) {
       Vec3d position = particles[i]->getPosition();
 	  Vec3d linearMomentum = particles[i]->getLinearMomentum();
+	  Matrix33d rotation = particles[i]->getRotation();
+	  Vec3d angularMomentum = particles[i]->getAngularMomentum();
 	  double mass = particles[i]->getMass();
 
       //Forward Euler time integration on position 
 	  position += timestep * (linearMomentum / mass);
 
+	  // Determine the change in rotation for this magnet, as described on pages G4-G15 of the
+	  // Rigid Body Dynamics chapter of the Pixar notes.
+	  Matrix33d inertiaTensorInverse = matrixMult(
+		  matrixMult(rotation, particles[i]->getIBodyInverse()),
+		  transpose(rotation));
+
+	  Vec3d angularVelocity = matrixVectorMult(inertiaTensorInverse, particles[i]->getAngularMomentum());
+
+	  Matrix33d deltaRotation;
+
+	  for(int j = 0; j < 3; ++j) {
+		  Vec3d column;
+		  for(int k = 0; k < 3; ++k) {
+			column[k] = rotation[k][j];
+		  }
+		  column = cross(angularVelocity, column);
+		  for(int k = 0; k < 3; ++k) {
+			deltaRotation[k][j] = column[k];
+		  }
+	  }
+
+	  Matrix33d newRotation = rotation + scalarMatrixMult(timestep, deltaRotation);
+	  // Normalize the rows of the rotation matrix to prevent the matrix from blowing up due to
+	  // numerical error.
+	  for(int j = 0; j < 3; ++j) {
+		normalize(newRotation[j]);
+	  }
+
       //Forward Euler time integration on linear momentum
+	  // Gravity applies evenly over the entire object, so there is no torque resulting from gravity.
 	  linearMomentum += timestep * constant_acceleration * mass;
    
       //process simple impulsed-based, frictionless collisions
@@ -88,6 +119,13 @@ void advance_sim() {
       //floor
 	  if(position[1] < 0 && linearMomentum[1] < 0) {
 		 linearMomentum[1] *= -coeff_restitution;
+
+		 // As an example, apply a force opposing motion when the magnet hits the ground.
+		 /*Vec3d force(-linearMomentum[0], 0, -linearMomentum[2]);
+		 linearMomentum += timestep * force;
+		 Vec3d locationOfForceApplication = position + Vec3d(0, -particles[i]->getRadius() , 0);
+		 Vec3d torque = cross((locationOfForceApplication - position), force);
+		 angularMomentum += timestep * torque;*/
 	  }
 
       //other walls
@@ -101,6 +139,8 @@ void advance_sim() {
       //save back the results
 	  particles[i]->setPosition(position);
 	  particles[i]->setLinearMomentum(linearMomentum);
+	  particles[i]->setRotation(newRotation);
+	  particles[i]->setAngularMomentum(angularMomentum);
    }
 
    handle_collisions();
@@ -118,7 +158,7 @@ void set_view(Gluvi::Target3D &cam)
    cam.dist = 3;
 }
 
-void set_lights_and_material(int object)
+void set_lights(int object)
 {
    glEnable(GL_LIGHTING);
    GLfloat global_ambient[4] = {0.1f, 0.1f, 0.1f, 1.0f};
@@ -127,28 +167,20 @@ void set_lights_and_material(int object)
 
    //Light #1
    GLfloat color[4] = {1.0f, 1.0f, 1.0f, 1.0f};
-   GLfloat position[3] = {1.0f, 1.0f, 1.0f};
+   GLfloat position[4] = {0.0f, 1.0f, 0.0f, 0.0f};
    glLightfv(GL_LIGHT0, GL_SPECULAR, color);
    glLightfv(GL_LIGHT0, GL_DIFFUSE, color);
    glLightfv(GL_LIGHT0, GL_POSITION, position);
 
    //Light #2
    GLfloat color2[4] = {1.0f, 1.0f, 1.0f, 1.0f};
-   GLfloat position2[3] = {-1.0f, -1.0f, 1.0f};
+   GLfloat position2[4] = {1.0f, 0.0f, 0.0f, 0.0f};
    glLightfv(GL_LIGHT1, GL_SPECULAR, color2);
    glLightfv(GL_LIGHT1, GL_DIFFUSE, color2);
    glLightfv(GL_LIGHT1, GL_POSITION, position2);
 
-   GLfloat obj_color[4] = {.2, .3, .7};
-   glMaterialfv (GL_FRONT, GL_AMBIENT, obj_color);
-   glMaterialfv (GL_FRONT, GL_DIFFUSE, obj_color);
-
-   GLfloat specular[4] = {.4, .2, .8};
-   glMaterialf (GL_FRONT, GL_SHININESS, 32);
-   glMaterialfv (GL_FRONT, GL_SPECULAR, specular);
    glEnable(GL_LIGHT0);
    glEnable(GL_LIGHT1);
-
 }
 
 void timer(int value)
@@ -173,15 +205,13 @@ void display(void)
    glEnable(GL_LIGHTING);
    glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
 
-   set_lights_and_material(1); 
+   set_lights(1); 
 
    //Draw the particles as simple spheres.
    glPolygonMode(GL_FRONT_AND_BACK, GL_LINES);
    for(unsigned int p = 0; p < particles.size(); ++p) {
       glPushMatrix();
 	  SphereMagnet* particle = particles[p];
-	  Vec3d pos = particle->getPosition();
-      glTranslated(pos[0], pos[1], pos[2]);
 	  particle->draw();
       glPopMatrix();   
    }

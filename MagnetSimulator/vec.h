@@ -472,9 +472,19 @@ inline void update_minmax(const Vec<N,T> &x, Vec<N,T> &xmin, Vec<N,T> &xmax)
 // Functions for matrices.
 typedef Vec<3,Vec3d> Matrix33d;
 
+template<unsigned int N, unsigned int M, class T>
+Vec<N,Vec<M,T> > scalarMatrixMult(T c, const Vec<N,Vec<M,T> >& u) {
+	Vec<N,Vec<M,T> > w;
+	for(int n = 0; n < N; ++n) {
+		for(int m = 0; m < M; ++m) {
+			w[n][m] = c * u[n][m];
+		}
+	}
+	return w;
+}
+
 template<unsigned int N, unsigned int M, unsigned int P, class T>
-Vec<N,Vec<P,T> > matrixMult(const Vec<N,Vec<M,T> > &u, const Vec<M,Vec<P,T> > &v)
-{
+Vec<N,Vec<P,T> > matrixMult(const Vec<N,Vec<M,T> > &u, const Vec<M,Vec<P,T> > &v) {
 	Vec<P,T> row(0);
 	Vec<N,Vec<P,T> > w(row);
 	for(int n = 0; n < N; ++n) {
@@ -488,9 +498,31 @@ Vec<N,Vec<P,T> > matrixMult(const Vec<N,Vec<M,T> > &u, const Vec<M,Vec<P,T> > &v
 }
 
 template<unsigned int N, unsigned int M, class T>
+Vec<M,T> matrixVectorMult(const Vec<N,Vec<M,T> > &u, const Vec<M,T>& v) {
+	Vec<M,T> w(0);
+	for(int n = 0; n < N; ++n) {
+		for(int m = 0; m < M; ++m) {
+			w[n] += u[n][m] * v[m];
+		}
+	}
+	return w;
+}
+
+template<unsigned int N, unsigned int M, class T>
+Vec<M,Vec<N,T> > transpose(const Vec<N,Vec<M,T> >& u) {
+	Vec<M, Vec<N, T>> w;
+	for(int n = 0; n < N; ++n) {
+		for(int m = 0; m < M; ++m) {
+			w[m][n] = u[n][m];
+		}
+	}
+	return w;
+}
+
+template<unsigned int N, unsigned int M, class T>
 void makeIdentityMatrix(Vec<N,Vec<M,T> >& matrix) {
 	for(int n = 0; n < N; ++n) {
-		for(int p = 0; m < M; ++m) {
+		for(int m = 0; m < M; ++m) {
 			if(n == m) {
 				matrix[n][m] = 1;
 			} else {
