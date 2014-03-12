@@ -26,6 +26,14 @@ SphereMagnet::SphereMagnet(Vec3d position, Vec3d linearMomentum, double mass) {
 SphereMagnet::~SphereMagnet() {
 }
 
+Vec3d SphereMagnet::getMagneticMomentDirection() {
+	Vec3d north(0);
+	north[1] = 1;
+	north = matrixVectorMult(rotation, north);
+	normalize(north);
+	return north;
+}
+
 void SphereMagnet::draw() {
 	// Draw the south magnetic pole.
 	GLfloat obj_colorSouth[4] = {.3f, .3f, .6f};
@@ -49,10 +57,7 @@ void SphereMagnet::draw() {
 	glMaterialf (GL_FRONT, GL_SHININESS, 32);
 	glMaterialfv (GL_FRONT, GL_SPECULAR, specularNorth);
 
-	Vec3d north(0);
-	north[1] = 1;
-	north = matrixVectorMult(rotation, north);
-	normalize(north);
+	Vec3d north = getMagneticMomentDirection();
 	north *= 0.002;
 	glTranslated(north[0], north[1], north[2]);
 	gluSphere(particle_sphere, radius, 20, 20);

@@ -21,6 +21,7 @@ public:
 	Vec3d getAngularMomentum() {return angularMomentum;}
 	double getRadius() {return radius;}
 	double getMass() {return mass;}
+	Vec3d getMagneticMomentDirection();
 	Matrix33d getIBodyInverse() {return iBodyInverse;}
 	void setPosition(Vec3d newPosition) {position = newPosition;}
 	void setLinearMomentum(Vec3d newLinearMomentum) {linearMomentum = newLinearMomentum;}

@@ -16,7 +16,7 @@ unsigned int frame= 0;
 //Sim parameters
 double timestep = 0.01;
 double coeff_restitution = 0.85;
-int num_particles = 50;
+int num_particles = 2;
 Vec3d constant_acceleration(0, -9.81, 0); //gravity
 
 bool filming = false;
@@ -25,6 +25,7 @@ bool running = false;
 char * sgifileformat;
 
 std::vector<SphereMagnet*> particles;
+Vec<11, Vec<11, Vec<11, Vec3d>>> magneticInduction;
 
 // Handle collisions using penalty/repulsion forces
 void handle_collisions() {
@@ -56,6 +57,44 @@ void handle_collisions() {
 
 				magnet1->setLinearMomentum(magnet1->getLinearMomentum() + fa);
 				magnet2->setLinearMomentum(magnet2->getLinearMomentum() + fb);
+			}
+		}
+	}
+}
+
+
+// Compute the magnetic induction, as described in section 3.1 of the Thomaszewski et al. paper.
+void computeMagneticInduction() {
+	for(int i = 0; i < 11; ++i) {
+		for(int j = 0; j < 11; ++j) {
+			for(int k = 0; k < 11; ++k) {
+				magneticInduction[i][j][k] = Vec3d(0);
+				Vec3d position(0.1 * i, 0.1 * j, 0.1 * k);
+
+				for(unsigned int p = 0; p < particles.size(); ++p) {
+					Vec3d m = 30.0 * particles[p]->getMagneticMomentDirection(); // TODO: the 30.0 here can be replaced by a magnet strength per magnet
+					Vec3d distance = position - particles[p]->getPosition();
+					Vec3d n = normalized(distance);
+					normalize(n);
+
+					// mu_0 = 4 * pi * 10 ^ -7 (V*s)/(A*m), so mu_0/(4*pi) = 10 ^ -7 (V*s)/(A*m)
+					Vec3d b = 0.0000001 * (3.0 * n * dot(n, m) - m) / mag(distance);
+					magneticInduction[i][j][k] += b;
+				}
+			}
+		}
+	}
+}
+
+
+void drawMagneticInductionLines() {
+	for(int i = 0; i < 11; ++i) {
+		for(int j = 0; j < 11; ++j) {
+			for(int k = 0; k < 11; ++k) {
+				Vec3d position(0.1 * i, 0.1 * j, 0.1 * k);
+				Vec3d vectorEnds = position + 3000.0 * magneticInduction[i][j][k]; // TODO: the 3000.0 here is kind of arbitrary
+				glVertex3d(position[0], position[1], position[2]);
+				glVertex3d(vectorEnds[0], vectorEnds[1], vectorEnds[2]);
 			}
 		}
 	}
@@ -144,6 +183,8 @@ void advance_sim() {
    }
 
    handle_collisions();
+
+   computeMagneticInduction();
 }
 
 
@@ -255,6 +296,8 @@ void display(void)
 
    glVertex3f(0,0,1);
    glVertex3f(0,1,1);
+
+   drawMagneticInductionLines();
 
    glEnd();
  
