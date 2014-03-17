@@ -29,8 +29,8 @@ Vec<11, Vec<11, Vec<11, Vec3d>>> magneticInduction;
 
 // Handle collisions using penalty/repulsion forces
 void handle_collisions() {
-	const double SPRING_CONSTANT = 0.5;
-	const double DAMPING_CONSTANT = 0.85;
+	const double SPRING_CONSTANT = 1.0;//0.5;
+	const double DAMPING_CONSTANT = 1.0;//0.85;
 
 	// Testing if two spheres are colliding is pretty simple; just
 	// check if the distance between the centres of the two spheres
@@ -72,7 +72,7 @@ void computeMagneticInduction() {
 				Vec3d position(0.1 * i, 0.1 * j, 0.1 * k);
 
 				for(unsigned int p = 0; p < particles.size(); ++p) {
-					Vec3d m = 30.0 * particles[p]->getMagneticMomentDirection(); // TODO: the 30.0 here can be replaced by a magnet strength per magnet
+					Vec3d m = particles[p]->getMagneticMoment();
 					Vec3d distance = position - particles[p]->getPosition();
 					Vec3d n = normalized(distance);
 					normalize(n);
@@ -92,7 +92,7 @@ void drawMagneticInductionLines() {
 		for(int j = 0; j < 11; ++j) {
 			for(int k = 0; k < 11; ++k) {
 				Vec3d position(0.1 * i, 0.1 * j, 0.1 * k);
-				Vec3d vectorEnds = position + 3000.0 * magneticInduction[i][j][k]; // TODO: the 3000.0 here is kind of arbitrary
+				Vec3d vectorEnds = position + 600.0 * magneticInduction[i][j][k]; // TODO: the constant here is kind of arbitrary
 				glVertex3d(position[0], position[1], position[2]);
 				glVertex3d(vectorEnds[0], vectorEnds[1], vectorEnds[2]);
 			}
@@ -151,7 +151,7 @@ void advance_sim() {
 
       //Forward Euler time integration on linear momentum
 	  // Gravity applies evenly over the entire object, so there is no torque resulting from gravity.
-	  linearMomentum += timestep * constant_acceleration * mass;
+	  //linearMomentum += timestep * constant_acceleration * mass;
    
       //process simple impulsed-based, frictionless collisions
       
@@ -182,7 +182,36 @@ void advance_sim() {
 	  particles[i]->setAngularMomentum(angularMomentum);
    }
 
-   handle_collisions();
+	handle_collisions();
+
+	// Determine the magnetic forces and torques being applied to this magnet by the other magnets, as
+	// described in Section 3.2 of the Thomaszewski et al. paper. Currently, each magnet is treated as
+	// a single element; for more accurate results, the magnets should be treated as many small pieces
+	// of magnets.
+	for(int i = 0; i < num_particles; ++i) {
+		for(int j = 0; j < num_particles; ++j) {
+			if(i == j)
+				continue;
+
+			Vec3d displacement = particles[i]->getPosition() - particles[j]->getPosition();
+			double distanceSquared = mag2(displacement);
+			Vec3d n = normalized(displacement);
+			Vec3d magnetizationI = particles[i]->getMagneticMoment();
+			Vec3d magnetizationJ = particles[j]->getMagneticMoment();
+
+			// mu_0 = 4 * pi * 10 ^ -7 (V*s)/(A*m), so mu_0/(4*pi) = 10 ^ -7 (V*s)/(A*m)
+			Vec3d force = 0.0000001 * (1.0 / (distanceSquared * distanceSquared)) *
+				( (-15.0 * n * dot(magnetizationI, n) * dot(magnetizationJ, n)) +
+				3.0 * n * dot(magnetizationI, magnetizationJ) +
+				3.0 * (magnetizationI * dot(magnetizationJ, n) + magnetizationJ * dot(magnetizationI, n)));
+
+			Vec3d torque = 0.0000001 * (3.0 / (distanceSquared * mag(displacement))) *
+				(cross(magnetizationI, n) * dot(magnetizationJ, n) - cross(magnetizationI, magnetizationJ));
+
+			particles[i]->setLinearMomentum(particles[i]->getLinearMomentum() + timestep * force);
+			particles[i]->setAngularMomentum(particles[i]->getAngularMomentum() + timestep * torque);
+		}
+	}
 
    computeMagneticInduction();
 }
@@ -394,17 +423,24 @@ int main(int argc, char **argv)
    //set up initial particle set
    int seed = 0;
    double mass = 1.0;
+   double magnetStrength = 100.0;
    for(int i = 0; i < num_particles; ++i) {
       Vec3d position;
       position[0] = randhashf(++seed,0,1);
       position[1] = randhashf(++seed,0,1);
       position[2] = randhashf(++seed,0,1);
+	  //position[0] = 0.5;
+	  //position[1] = (double)i + 0.1;
+	  //position[2] = 0.5;
 	  Vec3d linearMomentum;
-	  linearMomentum[0] = mass * randhashf(++seed,-5,5);
-      linearMomentum[1] = mass * randhashf(++seed,-5,5);
-      linearMomentum[2] = mass * randhashf(++seed,-5,5);
+	  //linearMomentum[0] = mass * randhashf(++seed,-5,5);
+      //linearMomentum[1] = mass * randhashf(++seed,-5,5);
+      //linearMomentum[2] = mass * randhashf(++seed,-5,5);
+	  linearMomentum[0] = 0.0;
+      linearMomentum[1] = 0.0;
+      linearMomentum[2] = 0.0;
 
-	  particles.push_back(new SphereMagnet(position, linearMomentum, mass));
+	  particles.push_back(new SphereMagnet(position, linearMomentum, mass, magnetStrength));
    }
 
    Gluvi::run();

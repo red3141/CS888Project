@@ -8,11 +8,12 @@ class SphereMagnet {
 	Vec3d angularMomentum;
 	double radius;
 	double mass;
+	double magnetStrength;
 	Matrix33d iBodyInverse;
 	GLUquadric* particle_sphere;
 
 public:
-	SphereMagnet(Vec3d position, Vec3d linearMomentum, double mass);
+	SphereMagnet(Vec3d position, Vec3d linearMomentum, double mass, double magnetStrength);
 	~SphereMagnet();
 	Vec3d getPosition() {return position;}
 	Vec3d getVelocity() {return linearMomentum / mass;}
@@ -21,7 +22,7 @@ public:
 	Vec3d getAngularMomentum() {return angularMomentum;}
 	double getRadius() {return radius;}
 	double getMass() {return mass;}
-	Vec3d getMagneticMomentDirection();
+	Vec3d getMagneticMoment();
 	Matrix33d getIBodyInverse() {return iBodyInverse;}
 	void setPosition(Vec3d newPosition) {position = newPosition;}
 	void setLinearMomentum(Vec3d newLinearMomentum) {linearMomentum = newLinearMomentum;}

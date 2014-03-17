@@ -4,7 +4,7 @@
 
 using namespace std;
 
-SphereMagnet::SphereMagnet(Vec3d position, Vec3d linearMomentum, double mass) {
+SphereMagnet::SphereMagnet(Vec3d position, Vec3d linearMomentum, double mass, double magnetStrength) {
 	this->position = position;
 	this->linearMomentum = linearMomentum;
 	makeIdentityMatrix(this->rotation);
@@ -12,6 +12,7 @@ SphereMagnet::SphereMagnet(Vec3d position, Vec3d linearMomentum, double mass) {
 		this->angularMomentum[2] = 0.0;
 	this->radius = 0.05;
 	this->mass = mass;
+	this->magnetStrength = magnetStrength;
 	this->particle_sphere = gluNewQuadric();
 
 	// Compute I_{body}^{-1}
@@ -26,12 +27,12 @@ SphereMagnet::SphereMagnet(Vec3d position, Vec3d linearMomentum, double mass) {
 SphereMagnet::~SphereMagnet() {
 }
 
-Vec3d SphereMagnet::getMagneticMomentDirection() {
+Vec3d SphereMagnet::getMagneticMoment() {
 	Vec3d north(0);
 	north[1] = 1;
 	north = matrixVectorMult(rotation, north);
 	normalize(north);
-	return north;
+	return magnetStrength * north;
 }
 
 void SphereMagnet::draw() {
@@ -57,7 +58,7 @@ void SphereMagnet::draw() {
 	glMaterialf (GL_FRONT, GL_SHININESS, 32);
 	glMaterialfv (GL_FRONT, GL_SPECULAR, specularNorth);
 
-	Vec3d north = getMagneticMomentDirection();
+	Vec3d north = normalized(getMagneticMoment());
 	north *= 0.002;
 	glTranslated(north[0], north[1], north[2]);
 	gluSphere(particle_sphere, radius, 20, 20);
