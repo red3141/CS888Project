@@ -16,7 +16,7 @@ unsigned int frame= 0;
 //Sim parameters
 double timestep = 0.01;
 double coeff_restitution = 0.85;
-int num_particles = 2;
+int num_particles = 4;
 Vec3d constant_acceleration(0, -9.81, 0); //gravity
 
 bool filming = false;
@@ -25,11 +25,10 @@ bool running = false;
 char * sgifileformat;
 
 std::vector<SphereMagnet*> particles;
-Vec<11, Vec<11, Vec<11, Vec3d>>> magneticInduction;
 
 // Handle collisions using penalty/repulsion forces
 void handle_collisions() {
-	const double SPRING_CONSTANT = 1.0;//0.5;
+	const double SPRING_CONSTANT = 2.0;//0.5;
 	const double DAMPING_CONSTANT = 1.0;//0.85;
 
 	// Testing if two spheres are colliding is pretty simple; just
@@ -64,37 +63,44 @@ void handle_collisions() {
 
 
 // Compute the magnetic induction, as described in section 3.1 of the Thomaszewski et al. paper.
-void computeMagneticInduction() {
-	for(int i = 0; i < 11; ++i) {
-		for(int j = 0; j < 11; ++j) {
-			for(int k = 0; k < 11; ++k) {
-				magneticInduction[i][j][k] = Vec3d(0);
-				Vec3d position(0.1 * i, 0.1 * j, 0.1 * k);
+Vec3d computeMagneticInduction(Vec3d position) {
+	Vec3d result(0.0, 0.0, 0.0);
 
-				for(unsigned int p = 0; p < particles.size(); ++p) {
-					Vec3d m = particles[p]->getMagneticMoment();
-					Vec3d distance = position - particles[p]->getPosition();
-					Vec3d n = normalized(distance);
-					normalize(n);
+	for(unsigned int p = 0; p < particles.size(); ++p) {
+		Vec3d m = particles[p]->getMagneticMoment();
+		Vec3d distance = position - particles[p]->getPosition();
+		Vec3d n = normalized(distance);
+		normalize(n);
 
-					// mu_0 = 4 * pi * 10 ^ -7 (V*s)/(A*m), so mu_0/(4*pi) = 10 ^ -7 (V*s)/(A*m)
-					Vec3d b = 0.0000001 * (3.0 * n * dot(n, m) - m) / mag(distance);
-					magneticInduction[i][j][k] += b;
-				}
-			}
-		}
+		// mu_0 = 4 * pi * 10 ^ -7 (V*s)/(A*m), so mu_0/(4*pi) = 10 ^ -7 (V*s)/(A*m)
+		Vec3d b = 0.0000001 * (3.0 * n * dot(n, m) - m) / mag(distance);
+		result += b;
 	}
+
+	return result;
 }
 
 
 void drawMagneticInductionLines() {
-	for(int i = 0; i < 11; ++i) {
-		for(int j = 0; j < 11; ++j) {
-			for(int k = 0; k < 11; ++k) {
-				Vec3d position(0.1 * i, 0.1 * j, 0.1 * k);
-				Vec3d vectorEnds = position + 600.0 * magneticInduction[i][j][k]; // TODO: the constant here is kind of arbitrary
+	Vec3d offsets[] = {Vec3d(1.0, 0.0, 0.0), Vec3d(0.0, 1.0, 0.0), Vec3d(0.0, 0.0, 1.0),
+		Vec3d(-1.0, 0.0, 0.0), Vec3d(0.0, -1.0, 0.0), Vec3d(0.0, 0.0, -1.0),
+		normalized(Vec3d(1.0, 1.0, 0.0)), normalized(Vec3d(1.0, -1.0, 0.0)), normalized(Vec3d(-1.0, 1.0, 0.0)), normalized(Vec3d(-1.0, -1.0, 0.0)),
+		normalized(Vec3d(1.0, 0.0, 1.0)), normalized(Vec3d(1.0, 0.0, -1.0)), normalized(Vec3d(-1.0, 0.0, 1.0)), normalized(Vec3d(-1.0, 0.0, -1.0)),
+		normalized(Vec3d(0.0, 1.0, 1.0)), normalized(Vec3d(0.0, 1.0, -1.0)), normalized(Vec3d(0.0, -1.0, 1.0)), normalized(Vec3d(0.0, -1.0, -1.0)),
+		normalized(Vec3d(1.0, 1.0, 1.0)), normalized(Vec3d(1.0, -1.0, 1.0)), normalized(Vec3d(-1.0, 1.0, 1.0)), normalized(Vec3d(-1.0, -1.0, 1.0)),
+		normalized(Vec3d(1.0, 1.0, -1.0)), normalized(Vec3d(1.0, -1.0, -1.0)), normalized(Vec3d(-1.0, 1.0, -1.0)), normalized(Vec3d(-1.0, -1.0, -1.0))
+	};
+
+	for(unsigned int i = 0; i < particles.size(); ++i) {
+		for(int j = 0; j < 26; ++j) {
+			Vec3d position = particles[i]->getPosition();
+			position += particles[i]->getRadius() * offsets[j];
+			for(int k = 0; k < 100; ++k) {
+				Vec3d induction = normalized(computeMagneticInduction(position));
+				Vec3d newPosition = position + 0.01 * induction;
 				glVertex3d(position[0], position[1], position[2]);
-				glVertex3d(vectorEnds[0], vectorEnds[1], vectorEnds[2]);
+				glVertex3d(newPosition[0], newPosition[1], newPosition[2]);
+				position = newPosition;
 			}
 		}
 	}
@@ -194,7 +200,12 @@ void advance_sim() {
 				continue;
 
 			Vec3d displacement = particles[i]->getPosition() - particles[j]->getPosition();
-			double distanceSquared = mag2(displacement);
+			// Since repulsion forces are used to push colliding magnets apart, it is possible that the magnets
+			// could interpenetrate, resulting in extremely large magnetic forces. By always calculating the
+			// magnetic forces as if the magnets are at least as far apart as they would be if they were in
+			// contact, these extremely large, incorrect forces can be avoided.
+			double distance = max(mag(displacement), particles[i]->getRadius() + particles[j]->getRadius());
+			double distanceSquared = distance * distance;
 			Vec3d n = normalized(displacement);
 			Vec3d magnetizationI = particles[i]->getMagneticMoment();
 			Vec3d magnetizationJ = particles[j]->getMagneticMoment();
@@ -205,15 +216,13 @@ void advance_sim() {
 				3.0 * n * dot(magnetizationI, magnetizationJ) +
 				3.0 * (magnetizationI * dot(magnetizationJ, n) + magnetizationJ * dot(magnetizationI, n)));
 
-			Vec3d torque = 0.0000001 * (3.0 / (distanceSquared * mag(displacement))) *
+			Vec3d torque = 0.0000001 * (3.0 / (distanceSquared * distance)) *
 				(cross(magnetizationI, n) * dot(magnetizationJ, n) - cross(magnetizationI, magnetizationJ));
 
 			particles[i]->setLinearMomentum(particles[i]->getLinearMomentum() + timestep * force);
 			particles[i]->setAngularMomentum(particles[i]->getAngularMomentum() + timestep * torque);
 		}
 	}
-
-   computeMagneticInduction();
 }
 
 
@@ -423,15 +432,15 @@ int main(int argc, char **argv)
    //set up initial particle set
    int seed = 0;
    double mass = 1.0;
-   double magnetStrength = 100.0;
+   double magnetStrength = 300.0;
    for(int i = 0; i < num_particles; ++i) {
       Vec3d position;
       position[0] = randhashf(++seed,0,1);
       position[1] = randhashf(++seed,0,1);
       position[2] = randhashf(++seed,0,1);
-	  //position[0] = 0.5;
-	  //position[1] = (double)i + 0.1;
-	  //position[2] = 0.5;
+	  //position[0] = 0.0 + (double)i * 0.1;
+	  //position[1] = 0.0 + (double)i * 0.1;
+	  //position[2] = 0.0 + (double)i * 0.1;
 	  Vec3d linearMomentum;
 	  //linearMomentum[0] = mass * randhashf(++seed,-5,5);
       //linearMomentum[1] = mass * randhashf(++seed,-5,5);
