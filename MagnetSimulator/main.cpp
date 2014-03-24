@@ -14,9 +14,9 @@ string frame_number="Frame 0";
 unsigned int frame= 0;
 
 //Sim parameters
-double timestep = 0.01;
+double timestep = 0.001;
 double coeff_restitution = 0.85;
-int num_particles = 4;
+int num_particles = 2;
 Vec3d constant_acceleration(0, -9.81, 0); //gravity
 
 bool filming = false;
@@ -28,8 +28,8 @@ std::vector<SphereMagnet*> particles;
 
 // Handle collisions using penalty/repulsion forces
 void handle_collisions() {
-	const double SPRING_CONSTANT = 2.0;//0.5;
-	const double DAMPING_CONSTANT = 1.0;//0.85;
+	const double SPRING_CONSTANT = 10.0;
+	const double DAMPING_CONSTANT = 1.0;
 
 	// Testing if two spheres are colliding is pretty simple; just
 	// check if the distance between the centres of the two spheres
@@ -82,22 +82,55 @@ Vec3d computeMagneticInduction(Vec3d position) {
 
 
 void drawMagneticInductionLines() {
-	Vec3d offsets[] = {Vec3d(1.0, 0.0, 0.0), Vec3d(0.0, 1.0, 0.0), Vec3d(0.0, 0.0, 1.0),
-		Vec3d(-1.0, 0.0, 0.0), Vec3d(0.0, -1.0, 0.0), Vec3d(0.0, 0.0, -1.0),
-		normalized(Vec3d(1.0, 1.0, 0.0)), normalized(Vec3d(1.0, -1.0, 0.0)), normalized(Vec3d(-1.0, 1.0, 0.0)), normalized(Vec3d(-1.0, -1.0, 0.0)),
-		normalized(Vec3d(1.0, 0.0, 1.0)), normalized(Vec3d(1.0, 0.0, -1.0)), normalized(Vec3d(-1.0, 0.0, 1.0)), normalized(Vec3d(-1.0, 0.0, -1.0)),
-		normalized(Vec3d(0.0, 1.0, 1.0)), normalized(Vec3d(0.0, 1.0, -1.0)), normalized(Vec3d(0.0, -1.0, 1.0)), normalized(Vec3d(0.0, -1.0, -1.0)),
-		normalized(Vec3d(1.0, 1.0, 1.0)), normalized(Vec3d(1.0, -1.0, 1.0)), normalized(Vec3d(-1.0, 1.0, 1.0)), normalized(Vec3d(-1.0, -1.0, 1.0)),
-		normalized(Vec3d(1.0, 1.0, -1.0)), normalized(Vec3d(1.0, -1.0, -1.0)), normalized(Vec3d(-1.0, 1.0, -1.0)), normalized(Vec3d(-1.0, -1.0, -1.0))
-	};
+	// The idea here is to draw the magnetic field lines starting at 18 points on the surface of each magnet.
+	// The 18 points are the north and south magnetic poles and 9 points around the poles, halfway between the poles
+	// and the equators. These points are found by finding two vectors perpendicular to the magnetization direction
+	// of the magnets, and then combining these vectors with the magnetization direction.
+	// For the points on the north side of a magnet, the magnetic field is followed in a forward direction, while for
+	// the points on the south side of a magnet, the magentic field is followed in a backward direction. This is because
+	// the magnetic field goes from the north sides of the magnets to the south sides.
 
 	for(unsigned int i = 0; i < particles.size(); ++i) {
-		for(int j = 0; j < 26; ++j) {
+		Vec3d north = particles[i]->getNorth();
+
+		// Find 2 vectors perpendicular to North.
+		Vec3d perp(0);
+		if(north[0] == 0) {
+			perp[1] = -north[2];
+			perp[2] = north[1];
+		} else if(north[1] == 0) {
+			perp[0] = north[2];
+			perp[2] = -north[0];
+		} else {
+			perp[0] = -north[1];
+			perp[1] = north[0];
+		}
+		normalize(perp);
+		Vec3d otherPerp = normalized(cross(north, perp));
+
+		Vec3d positiveOffsets[] = {normalized(north), normalized(north + perp), normalized(north - perp), normalized(north + otherPerp),
+			normalized(north - otherPerp), normalized(north + perp + otherPerp), normalized(north - perp + otherPerp),
+			normalized(north + perp - otherPerp), normalized(north - perp - otherPerp)};
+		Vec3d negativeOffsets[] = {normalized(-north), normalized(-north + perp), normalized(-north - perp), normalized(-north + otherPerp),
+			normalized(-north - otherPerp), normalized(-north + perp + otherPerp), normalized(-north - perp + otherPerp),
+			normalized(-north + perp - otherPerp), normalized(-north - perp - otherPerp)};
+		
+		for(int j = 0; j < 9; ++j) {
 			Vec3d position = particles[i]->getPosition();
-			position += particles[i]->getRadius() * offsets[j];
+			position += particles[i]->getRadius() * positiveOffsets[j];
 			for(int k = 0; k < 100; ++k) {
 				Vec3d induction = normalized(computeMagneticInduction(position));
 				Vec3d newPosition = position + 0.01 * induction;
+				glVertex3d(position[0], position[1], position[2]);
+				glVertex3d(newPosition[0], newPosition[1], newPosition[2]);
+				position = newPosition;
+			}
+
+			position = particles[i]->getPosition();
+			position += particles[i]->getRadius() * negativeOffsets[j];
+			for(int k = 0; k < 100; ++k) {
+				Vec3d induction = normalized(computeMagneticInduction(position));
+				Vec3d newPosition = position - 0.01 * induction;
 				glVertex3d(position[0], position[1], position[2]);
 				glVertex3d(newPosition[0], newPosition[1], newPosition[2]);
 				position = newPosition;
@@ -433,7 +466,7 @@ int main(int argc, char **argv)
    int seed = 0;
    double mass = 1.0;
    double magnetStrength = 300.0;
-   for(int i = 0; i < num_particles; ++i) {
+   /*for(int i = 0; i < num_particles; ++i) {
       Vec3d position;
       position[0] = randhashf(++seed,0,1);
       position[1] = randhashf(++seed,0,1);
@@ -450,7 +483,9 @@ int main(int argc, char **argv)
       linearMomentum[2] = 0.0;
 
 	  particles.push_back(new SphereMagnet(position, linearMomentum, mass, magnetStrength));
-   }
+   }*/
+   particles.push_back(new SphereMagnet(Vec3d(0.2, 0.3, 0.5), Vec3d(0.0, 0.0, 0.0), mass, magnetStrength, Vec3d(0.0, 1.0, 0.0)));
+   particles.push_back(new SphereMagnet(Vec3d(0.8, 0.7, 0.5), Vec3d(0.0, 0.0, 0.0), mass, magnetStrength, Vec3d(0.0, 1.0, 0.0)));
 
    Gluvi::run();
    return 0;
