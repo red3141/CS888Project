@@ -7,6 +7,7 @@
 #include "gluvi.h"
 #include "gl/glu.h"
 #include "SphereMagnet.h"
+#include "MeshMagnetElement.h"
 
 using namespace std;
 
@@ -25,6 +26,7 @@ bool running = false;
 char * sgifileformat;
 
 std::vector<SphereMagnet*> particles;
+std::vector<std::vector<MeshMagnetElement> > immobileMagnets;
 
 // Handle collisions using penalty/repulsion forces
 void handle_collisions() {
@@ -258,6 +260,40 @@ void advance_sim() {
 	}
 }
 
+void createRingMagnet() {
+	std::vector<MeshMagnetElement> ringMagnet;
+
+	MeshMagnetElement e1(300.0, Vec3d(0.0, 1.0, 0.0), Vec3f(0.7f, 0.7f, 0.7f));
+	std::vector<Vec3d> face;
+	face.push_back(Vec3d(0.45, 0.45, 0.45));
+	face.push_back(Vec3d(0.55, 0.45, 0.45));
+	face.push_back(Vec3d(0.55, 0.55, 0.45));
+	face.push_back(Vec3d(0.45, 0.55, 0.45));
+	e1.addFace(face);
+	face.clear();
+	face.push_back(Vec3d(0.55, 0.45, 0.45));
+	face.push_back(Vec3d(0.55, 0.45, 0.55));
+	face.push_back(Vec3d(0.55, 0.55, 0.55));
+	face.push_back(Vec3d(0.55, 0.55, 0.45));
+	e1.addFace(face);
+	face.clear();
+	face.push_back(Vec3d(0.55, 0.45, 0.55));
+	face.push_back(Vec3d(0.45, 0.45, 0.55));
+	face.push_back(Vec3d(0.45, 0.55, 0.55));
+	face.push_back(Vec3d(0.55, 0.55, 0.55));
+	e1.addFace(face);
+	face.clear();
+	face.push_back(Vec3d(0.45, 0.45, 0.55));
+	face.push_back(Vec3d(0.45, 0.55, 0.55));
+	face.push_back(Vec3d(0.45, 0.55, 0.45));
+	face.push_back(Vec3d(0.45, 0.45, 0.45));
+	e1.addFace(face);
+
+	ringMagnet.push_back(e1);
+
+	//immobileMagnets.push_back(ringMagnet);
+}
+
 
 void set_view(Gluvi::Target3D &cam)
 {
@@ -320,12 +356,20 @@ void display(void)
    set_lights(1); 
 
    //Draw the particles as simple spheres.
-   glPolygonMode(GL_FRONT_AND_BACK, GL_LINES);
+   glPolygonMode(GL_FRONT_AND_BACK, /*GL_LINES*/GL_FILL);
    for(unsigned int p = 0; p < particles.size(); ++p) {
       glPushMatrix();
 	  SphereMagnet* particle = particles[p];
 	  particle->draw();
       glPopMatrix();   
+   }
+
+   for(unsigned int p = 0; p < immobileMagnets.size(); ++p) {
+	   for(unsigned int e = 0; e < immobileMagnets[p].size(); ++e) {
+		   glPushMatrix();
+		   immobileMagnets[p][e].draw();
+		   glPopMatrix();
+	   }
    }
  
    //Draw bounding box wireframe
@@ -486,6 +530,9 @@ int main(int argc, char **argv)
    }*/
    particles.push_back(new SphereMagnet(Vec3d(0.2, 0.3, 0.5), Vec3d(0.0, 0.0, 0.0), mass, magnetStrength, Vec3d(0.0, 1.0, 0.0)));
    particles.push_back(new SphereMagnet(Vec3d(0.8, 0.7, 0.5), Vec3d(0.0, 0.0, 0.0), mass, magnetStrength, Vec3d(0.0, 1.0, 0.0)));
+
+   // Set up the immobile magnets.
+   createRingMagnet();
 
    Gluvi::run();
    return 0;
