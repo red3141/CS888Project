@@ -31,4 +31,5 @@ public:
 	void setRotation(Matrix33d newRotation) {rotation = newRotation;}
 	void setAngularMomentum(Vec3d newAngularMomentum) {angularMomentum = newAngularMomentum;}
 	void draw();
+	std::vector<Vec3d> getMagneticInductionStartPoints();
 };
