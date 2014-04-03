@@ -21,6 +21,7 @@ Vec3d constant_acceleration(0, -9.81, 0); //gravity
 
 bool filming = false;
 bool running = false;
+bool drawingInduction = false;
 
 char * sgifileformat;
 
@@ -109,18 +110,18 @@ void drawMagneticInductionLines() {
 		
 		for(unsigned int j = 0; j < startingPoints.size(); ++j) {
 			Vec3d position = startingPoints[j];
-			for(int k = 0; k < 50; ++k) {
-				Vec3d induction = normalized(computeMagneticInduction(position));
-				Vec3d newPosition = position + 0.01 * induction;
+			for(int k = 0; k < 1000; ++k) {
+				Vec3d induction = computeMagneticInduction(position);
+				Vec3d newPosition = position + induction;
 				glVertex3d(position[0], position[1], position[2]);
 				glVertex3d(newPosition[0], newPosition[1], newPosition[2]);
 				position = newPosition;
 			}
 
 			position = startingPoints[j];
-			for(int k = 0; k < 50; ++k) {
-				Vec3d induction = normalized(computeMagneticInduction(position));
-				Vec3d newPosition = position - 0.01 * induction;
+			for(int k = 0; k < 1000; ++k) {
+				Vec3d induction = computeMagneticInduction(position);
+				Vec3d newPosition = position - induction;
 				glVertex3d(position[0], position[1], position[2]);
 				glVertex3d(newPosition[0], newPosition[1], newPosition[2]);
 				position = newPosition;
@@ -134,24 +135,24 @@ void drawMagneticInductionLines() {
 			vector<Vec3d> startingPoints = immobileMagnets[i][j].getMagneticInductionStartPoints();
 
 			for(unsigned int j = 0; j < startingPoints.size(); ++j) {
-			Vec3d position = startingPoints[j];
-			for(int k = 0; k < 50; ++k) {
-				Vec3d induction = normalized(computeMagneticInduction(position));
-				Vec3d newPosition = position + 0.01 * induction;
-				glVertex3d(position[0], position[1], position[2]);
-				glVertex3d(newPosition[0], newPosition[1], newPosition[2]);
-				position = newPosition;
-			}
+				Vec3d position = startingPoints[j];
+				for(int k = 0; k < 1000; ++k) {
+					Vec3d induction = computeMagneticInduction(position);
+					Vec3d newPosition = position + induction;
+					glVertex3d(position[0], position[1], position[2]);
+					glVertex3d(newPosition[0], newPosition[1], newPosition[2]);
+					position = newPosition;
+				}
 
-			position = startingPoints[j];
-			for(int k = 0; k < 50; ++k) {
-				Vec3d induction = normalized(computeMagneticInduction(position));
-				Vec3d newPosition = position - 0.01 * induction;
-				glVertex3d(position[0], position[1], position[2]);
-				glVertex3d(newPosition[0], newPosition[1], newPosition[2]);
-				position = newPosition;
+				position = startingPoints[j];
+				for(int k = 0; k < 1000; ++k) {
+					Vec3d induction = computeMagneticInduction(position);
+					Vec3d newPosition = position - induction;
+					glVertex3d(position[0], position[1], position[2]);
+					glVertex3d(newPosition[0], newPosition[1], newPosition[2]);
+					position = newPosition;
+				}
 			}
-		}
 		}
 	}
 }
@@ -509,7 +510,9 @@ void display(void)
    glVertex3f(0,0,1);
    glVertex3f(0,1,1);
 
-   drawMagneticInductionLines();
+   if(drawingInduction) {
+      drawMagneticInductionLines();
+   }
 
    glEnd();
  
@@ -557,6 +560,7 @@ struct RunButton : public Gluvi::Button{
    }
 };
 
+
 void keyPress(unsigned char key, int x, int y) {
 
    if(key == 'r') {
@@ -564,6 +568,9 @@ void keyPress(unsigned char key, int x, int y) {
    }
    else if(key == 'f') {
       toggle_filming();
+   }
+   else if(key == 'l') {
+      drawingInduction = !drawingInduction;
    }
    glutPostRedisplay();
 
@@ -626,14 +633,24 @@ int main(int argc, char **argv)
 	  particles.push_back(new SphereMagnet(position, linearMomentum, mass, magnetStrength));
    }*/
 
+   // Three attracting magnets
+   particles.push_back(new SphereMagnet(Vec3d(0.1, 0.5, 0.5), Vec3d(0.0, 0.0, 0.0), mass, magnetStrength, Vec3d(1.0, 0.0, 0.0)));
+   particles.push_back(new SphereMagnet(Vec3d(0.5, 0.5, 0.5), Vec3d(0.0, 0.0, 0.0), mass, magnetStrength, Vec3d(1.0, 0.0, 0.0)));
+   particles.push_back(new SphereMagnet(Vec3d(0.9, 0.5, 0.5), Vec3d(0.0, 0.0, 0.0), mass, magnetStrength, Vec3d(1.0, 0.0, 0.0)));
+   
+   // Three repulsing magnets
+   /*particles.push_back(new SphereMagnet(Vec3d(0.3, 0.5, 0.5), Vec3d(0.0, 0.0, 0.0), mass, magnetStrength, Vec3d(1.0, 0.0, 0.0)));
+   particles.push_back(new SphereMagnet(Vec3d(0.7, 0.5, 0.5), Vec3d(0.0, 0.0, 0.0), mass, magnetStrength, Vec3d(-1.0, 0.0, 0.0)));
+   particles.push_back(new SphereMagnet(Vec3d(0.9, 0.5, 0.5), Vec3d(0.0, 0.0, 0.0), mass, magnetStrength, Vec3d(1.0, 0.0, 0.0)));*/
+
    // A demonstration of two magnets quickly orienting themselves, and then moving towards each other.
-	particles.push_back(new SphereMagnet(Vec3d(0.2, 0.3, 0.5), Vec3d(0.0, 0.0, 0.0), mass, magnetStrength, Vec3d(0.0, 1.0, 0.0)));
-	particles.push_back(new SphereMagnet(Vec3d(0.8, 0.7, 0.5), Vec3d(0.0, 0.0, 0.0), mass, magnetStrength, Vec3d(0.0, 1.0, 0.0)));
+	/*particles.push_back(new SphereMagnet(Vec3d(0.2, 0.3, 0.5), Vec3d(0.0, 0.0, 0.0), mass, magnetStrength, Vec3d(0.0, 1.0, 0.0)));
+	particles.push_back(new SphereMagnet(Vec3d(0.8, 0.7, 0.5), Vec3d(0.0, 0.0, 0.0), mass, magnetStrength, Vec3d(0.0, 1.0, 0.0)));*/
 
    // A demonstration of a more complicated magnet.
    // Set up the immobile magnet.
    /*createRingMagnet();
-   particles.push_back(new SphereMagnet(Vec3d(0.5, 0.1, 0.5), Vec3d(0.0, 0.0, 0.0), mass, magnetStrength, Vec3d(0.0, 1.0, 0.0)));*/
+   particles.push_back(new SphereMagnet(Vec3d(0.5, 0.1, 0.5), Vec3d(0.0, 0.0, 0.0), mass, magnetStrength, Vec3d(1.0, 0.0, 0.0)));*/
 
    Gluvi::run();
    return 0;

@@ -85,20 +85,19 @@ std::vector<Vec3d> SphereMagnet::getMagneticInductionStartPoints() {
 		startPoints.push_back(position + radius * normalized(north - perp));
 		startPoints.push_back(position + radius * normalized(north + otherPerp));
 		startPoints.push_back(position + radius * normalized(north - otherPerp));
-		startPoints.push_back(position + radius * normalized(north + perp + otherPerp));
-		startPoints.push_back(position + radius * normalized(north - perp + otherPerp));
-		startPoints.push_back(position + radius * normalized(north + perp - otherPerp));
-		startPoints.push_back(position + radius * normalized(north + perp - otherPerp));
-		startPoints.push_back(position + radius * normalized(north - perp - otherPerp));
+		//startPoints.push_back(position + radius * normalized(north + perp + otherPerp));
+		//startPoints.push_back(position + radius * normalized(north - perp + otherPerp));
+		//startPoints.push_back(position + radius * normalized(north + perp - otherPerp));
+		//startPoints.push_back(position + radius * normalized(north - perp - otherPerp));
 		startPoints.push_back(position + radius * normalized(-north));
 		startPoints.push_back(position + radius * normalized(-north + perp));
 		startPoints.push_back(position + radius * normalized(-north - perp));
 		startPoints.push_back(position + radius * normalized(-north + otherPerp));
 		startPoints.push_back(position + radius * normalized(-north - otherPerp));
-		startPoints.push_back(position + radius * normalized(-north + perp + otherPerp));
-		startPoints.push_back(position + radius * normalized(-north - perp + otherPerp));
-		startPoints.push_back(position + radius * normalized(-north + perp - otherPerp));
-		startPoints.push_back(position + radius * normalized(-north - perp - otherPerp));
+		//startPoints.push_back(position + radius * normalized(-north + perp + otherPerp));
+		//startPoints.push_back(position + radius * normalized(-north - perp + otherPerp));
+		//startPoints.push_back(position + radius * normalized(-north + perp - otherPerp));
+		//startPoints.push_back(position + radius * normalized(-north - perp - otherPerp));
 
 		return startPoints;
 }
