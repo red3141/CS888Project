@@ -164,29 +164,39 @@ As magnetism is a much less frequently explored area in physics-based animation 
 
 \section{Introduction}
 
-Lorem ipsum dolor sit amet, consectetur adipisicing elit, sed do
-eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad
-minim veniam, quis nostrud exercitation ullamco laboris nisi ut
-aliquip ex ea commodo consequat. Duis aute irure dolor in
-reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla
-pariatur. Excepteur sint occaecat cupidatat non proident, sunt in
-culpa qui officia deserunt mollit anim id est laborum.
+Magnets and magnetic objects are frequently encountered in real life. Fridge magnets are used to attach shopping lists to the fridge, magnets are used in various electronics like computer hard drives, and there are children's toys the make use of metal balls and plastic rods with magnets on the ends. Despite how common magnets are, however, there are not many papers in the computer graphics community that explore magnetism. This report aims to give an overview of the basic concepts required to create a magnet simulator.
 
-Lorem ipsum dolor sit amet, consectetur adipisicing elit, sed do
-eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad
-minim veniam, quis nostrud exercitation ullamco laboris nisi ut
-aliquip ex ea commodo consequat. Duis aute irure dolor in
-reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla
-pariatur. Excepteur sint occaecat cupidatat non proident, sunt in
-culpa qui officia deserunt mollit anim id est laborum.
+As this report presents merely the basics of a magnet simulator, not everything about simulating magnets and magnetism will be covered. Objects with permanent magnetization (that is, objects are magnetic on their own) are covered in this report, whereas objects with induced magnetization (that is, objects that become magnetic when exposed to a magnetic field) are not. In terms of the children's toy with the metal balls and plastic rods with magnets, the magnets in the plastic rods have permanent magnetization, whereas the metal balls have induced magnetization. This can be seen by the interaction between two of the metal balls. By themselves, two of the metal balls will not attract each other; however, when one of the metal balls is attached to the end of one of the plastic rods, the metal balls will stick to each other because of the induced magnetization in the balls. If the reader is interested in learning about objects with induced magnetization, they are encouraged to read ~\cite{Thomaszewski:2008:MIM}.
 
-Lorem ipsum dolor sit amet, consectetur adipisicing elit, sed do
-eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad
-minim veniam, quis nostrud exercitation ullamco laboris nisi ut
-aliquip ex ea commodo consequat. Duis aute irure dolor in
-reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla
-pariatur. Excepteur sint occaecat cupidatat non proident, sunt in
-culpa qui officia deserunt mollit anim id est laborum.
+!!!The remainder of this report proceeds as follows. Section 2 briefly describes the work that this report is based on. Section 3 will describe the rigid body animation concepts used in this project. Section 4 will describe the magnetism concepts used in this project. Section 5 will present and discuss some results produced by this project. Finally, section 6 will discuss some shortcomings of the project and some future work that would improve it.
+
+\section{Previous Work}
+
+Rigid body simulation is a much-explored area of physics-based animation. However, for this project, only some basic parts of rigid body animation are required, so this project uses ~\cite{pixarnotes} for the required background on rigid body animation. These course notes give an excellent introduction to many aspects of physically based modelling, including differential equations, particle dynamics, rigid body dynamics, collision detection and handling, and a few others. The sections on rigid body dynamics and collision detection and handling are the most important sections of the course notes for this project.
+
+As mentioned above, there has not been a lot of research into animating magnets in the computer graphics community. One paper that does explore magnetism is ~\cite{Thomaszewski:2008:MIM}. This paper covers the basics of magnets, including calculating magnetic induction and the forces and torques applied by the magnetic induction. This is the part of the paper that is implemented in this project. That paper also covers induced magnetism, which is not implemented in this project, as mentioned above. One further interesting topic explored by that paper is superconductors and their interaction with magnets.
+
+\section{Rigid Body Dynamics}
+
+We now go into detail about the rigid body dynamics concepts required for this project. As this project is focused on the basics, the description of these concepts will be primarily focused on one of the most basic shapes, the sphere. Some high-level explanation of how to extend these ideas to more general shapes will also be given.
+
+\subsection{Collision Detection and Handling}
+
+The first concept from rigid body dynamics that is explained is collision detection and handling. This is important for a magnet simulator because, in many circumstances, magnets will come into contact at some point in the simulation. If the collisions are not handled, the simulation will be highly physically inaccurate and, as will be seen later, the magnetic forces calculated by the simulator can be extremely high, causing the system to ``blow up.''
+
+Before the positions and velocities of objects can be adjusted to account for collisions, the collisions must be detected. For spheres, detecting collisions is quite simple: if the distance between the centres of two spheres is less than the sum of their radii, then the spheres are intersecting, so they have collided.
+
+For other shapes, collision detection is more complicated than it is for spheres, because other shapes are not as uniform. For general convex polyhedra, one method of testing for intersections is separating planes. As explained in ~\cite{pixarnotes}, if two convex polyhedra are non-intersecting, ``then a separating plane exists with the following property: either the plane contains a face of one of the polyhedra, or the plane contains an edge from one of the polyhedra and is parallel to an edge of the other polyhedra.'' Although finding these separating planes can take quite a bit of time, they can frequently be reused, since they can be associated with a face or an edge of a polyhedra. For more information on general collision detection, see Section 7 of the rigid body dynamics chapter of ~\shortcite{pixarnotes}.
+
+One method of handling the collisions is using penalty forces. This method allows objects to inter-penetrate, but when they do, a force is applied to the two objects to push them apart. This force is proportional to the distance the objects have inter-penetrated, so that the more the objects overlap, the stronger the force is that pushes them apart. That is, the force applied on object A for overlapping object B is:
+
+\begin{equation}
+ F = kd\hat{n}
+\end{equation}
+
+where $k$ is a constant that can be adjusted to produce softer or harder collisions, $d$ is the distance that object A has penetrated into object B, and $\hat{n}$ is the unit vector normal to the surface of B. For two colliding spheres, $d$ is the sum of the radii of the spheres minus the distance between the centres of the two spheres, and $\hat{n}$ is the unit vector pointing from the centre of one sphere to the centre of the other. The direction of $\hat{n}$ is chosen based on which sphere's penalty force is being calculated.
+
+\subsection{Rigid Body Forces and Torques}
 
 \section{Exposition}
 

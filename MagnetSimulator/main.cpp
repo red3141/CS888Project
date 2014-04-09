@@ -31,7 +31,7 @@ std::vector<std::vector<MeshMagnetElement> > immobileMagnets;
 // Handle collisions using penalty/repulsion forces
 void handle_collisions() {
 	const double SPRING_CONSTANT = 10.0;
-	const double DAMPING_CONSTANT = 1.0;
+	const double DAMPING_CONSTANT = 1000.0;
 
 	// Testing if two spheres are colliding is pretty simple; just
 	// check if the distance between the centres of the two spheres
@@ -43,18 +43,16 @@ void handle_collisions() {
 			Vec3d displacement = magnet1->getPosition() - magnet2->getPosition();
 			double distance = mag(displacement);
 			double radiusSum = magnet1->getRadius() + magnet2->getRadius();
+			double overlapDistance = radiusSum - distance;
 
-			if(distance < radiusSum) {
+			if(overlapDistance > 0) {
 				// Apply repulsion force as a spring force, as described on
-				// page C7 of the Particle System Dynamics chapter of the
+				// slide SH10 of the Collision and Contact section of the
 				// Pixar course notes.
-				Vec3d velocityDifference = magnet1->getVelocity() - magnet2->getVelocity();
-				Vec3d fa = -(SPRING_CONSTANT * (distance - radiusSum) +
-					DAMPING_CONSTANT * (dot(velocityDifference, displacement)) / distance) *
-					(displacement / distance);
+
+				Vec3d normal = normalized(magnet1->getPosition() - magnet2->getPosition());
+				Vec3d fa = DAMPING_CONSTANT * overlapDistance * normal;
 				Vec3d fb = -fa;
-				Vec3d acceleration1 = fa / magnet1->getMass();
-				Vec3d acceleration2 = fb / magnet2->getMass();
 
 				magnet1->setLinearMomentum(magnet1->getLinearMomentum() + fa);
 				magnet2->setLinearMomentum(magnet2->getLinearMomentum() + fb);
@@ -634,18 +632,18 @@ int main(int argc, char **argv)
    }*/
 
    // Three attracting magnets
-   particles.push_back(new SphereMagnet(Vec3d(0.1, 0.5, 0.5), Vec3d(0.0, 0.0, 0.0), mass, magnetStrength, Vec3d(1.0, 0.0, 0.0)));
+   /*particles.push_back(new SphereMagnet(Vec3d(0.1, 0.5, 0.5), Vec3d(0.0, 0.0, 0.0), mass, magnetStrength, Vec3d(1.0, 0.0, 0.0)));
    particles.push_back(new SphereMagnet(Vec3d(0.5, 0.5, 0.5), Vec3d(0.0, 0.0, 0.0), mass, magnetStrength, Vec3d(1.0, 0.0, 0.0)));
-   particles.push_back(new SphereMagnet(Vec3d(0.9, 0.5, 0.5), Vec3d(0.0, 0.0, 0.0), mass, magnetStrength, Vec3d(1.0, 0.0, 0.0)));
+   particles.push_back(new SphereMagnet(Vec3d(0.9, 0.5, 0.5), Vec3d(0.0, 0.0, 0.0), mass, magnetStrength, Vec3d(1.0, 0.0, 0.0)));*/
    
    // Three repulsing magnets
    /*particles.push_back(new SphereMagnet(Vec3d(0.3, 0.5, 0.5), Vec3d(0.0, 0.0, 0.0), mass, magnetStrength, Vec3d(1.0, 0.0, 0.0)));
-   particles.push_back(new SphereMagnet(Vec3d(0.7, 0.5, 0.5), Vec3d(0.0, 0.0, 0.0), mass, magnetStrength, Vec3d(-1.0, 0.0, 0.0)));
+   particles.push_back(new SphereMagnet(Vec3d(0.7, 0.51, 0.5), Vec3d(0.0, 0.0, 0.0), mass, magnetStrength, Vec3d(-1.0, 0.0, 0.0)));
    particles.push_back(new SphereMagnet(Vec3d(0.9, 0.5, 0.5), Vec3d(0.0, 0.0, 0.0), mass, magnetStrength, Vec3d(1.0, 0.0, 0.0)));*/
 
    // A demonstration of two magnets quickly orienting themselves, and then moving towards each other.
-	/*particles.push_back(new SphereMagnet(Vec3d(0.2, 0.3, 0.5), Vec3d(0.0, 0.0, 0.0), mass, magnetStrength, Vec3d(0.0, 1.0, 0.0)));
-	particles.push_back(new SphereMagnet(Vec3d(0.8, 0.7, 0.5), Vec3d(0.0, 0.0, 0.0), mass, magnetStrength, Vec3d(0.0, 1.0, 0.0)));*/
+	particles.push_back(new SphereMagnet(Vec3d(0.2, 0.3, 0.5), Vec3d(0.0, 0.0, 0.0), mass, magnetStrength, Vec3d(0.0, 1.0, 0.0)));
+	particles.push_back(new SphereMagnet(Vec3d(0.8, 0.7, 0.5), Vec3d(0.0, 0.0, 0.0), mass, magnetStrength, Vec3d(0.0, 1.0, 0.0)));
 
    // A demonstration of a more complicated magnet.
    // Set up the immobile magnet.
