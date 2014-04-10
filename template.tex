@@ -124,7 +124,7 @@
 
 \begin{abstract}
 
-This report describes the physics-based animation concepts required to transform a simple particle simulator into a somewhat less simple magnet simulator. In particular, there are four concepts required to perform this transformation. First, since magnets attract each other, they will inevitably come into contact. This requires collision detection and handling. Second, magnets rotate so that opposing poles are as near each other as possible. This requires implementing 3-dimensional rotations. Third, magnetic forces and torques need to be calculated so that the motion of the magnets can be determined. To do this, the magnetic induction caused by the magnets at arbitrary points must be calculated. The magnetic induction can also be used to draw the familiar magnetic field lines. Finally, the magnetic forces and torques must be applied to the magnets.
+This report describes the physics-based animation concepts required to transform a simple particle simulator into a somewhat less simple magnet simulator. In particular, there are four concepts required to perform this transformation. First, since magnets attract each other, they will inevitably come into contact. This requires collision detection and handling. Second, magnets rotate and move about during the simulation. This requires implementing the rigid body equations of motion. Third, magnetic forces and torques need to be calculated so that the motion of the magnets can be determined. To do this, the magnetic induction caused by the magnets at arbitrary points must be calculated. The magnetic induction can also be used to draw the familiar magnetic field lines. Finally, the magnetic forces and torques must be applied to the magnets.
 
 As magnetism is a much less frequently explored area in physics-based animation than rigid body motion, the focus will be on the latter two concepts.
 
@@ -189,40 +189,59 @@ Before the positions and velocities of objects can be adjusted to account for co
 For other shapes, collision detection is more complicated than it is for spheres, because other shapes are not as uniform. For general convex polyhedra, one method of testing for intersections is separating planes. As explained in ~\cite{pixarnotes}, if two convex polyhedra are non-intersecting, ``then a separating plane exists with the following property: either the plane contains a face of one of the polyhedra, or the plane contains an edge from one of the polyhedra and is parallel to an edge of the other polyhedra.'' Although finding these separating planes can take quite a bit of time, they can frequently be reused, since they can be associated with a face or an edge of a polyhedra. For more information on general collision detection, see Section 7 of the rigid body dynamics chapter of ~\shortcite{pixarnotes}.
 
 One method of handling the collisions is using penalty forces. This method allows objects to inter-penetrate, but when they do, a force is applied to the two objects to push them apart. This force is proportional to the distance the objects have inter-penetrated, so that the more the objects overlap, the stronger the force is that pushes them apart. That is, the force applied on object A for overlapping object B is:
-
 \begin{equation}
  F = kd\hat{n}
 \end{equation}
-
 where $k$ is a constant that can be adjusted to produce softer or harder collisions, $d$ is the distance that object A has penetrated into object B, and $\hat{n}$ is the unit vector normal to the surface of B. For two colliding spheres, $d$ is the sum of the radii of the spheres minus the distance between the centres of the two spheres, and $\hat{n}$ is the unit vector pointing from the centre of one sphere to the centre of the other. The direction of $\hat{n}$ is chosen based on which sphere's penalty force is being calculated.
 
-\subsection{Rigid Body Forces and Torques}
+\subsection{Rigid Body Equations of Motion}
+
+The second concept from rigid body dynamics that is crucial for a magnet simulator is the set of equations describing rigid body motion. These equations allow the simulated magnets to rotate so that opposing poles can align and to move towards and away from each other as the magnetic forces dictate.
+
+It is useful to first look at what information is required to advance a rigid body in a simulator. As rigid bodies, do not change their shape as the simulation progresses, their motion can be considered a combination of translations of and rotations about the centre of mass of the object. To update these throughout a simulation, it is necessary to store some information about the current state of the translations and rotations, as well as some information about how the translations and rotations are changing. This can be done by storing the following four pieces of information: the location of the centre of mass $x(t)$ of the rigid body, a rotation matrix $R(t)$ defining the orientation of the rigid body (quaternions are generally preferred for this, but for simplicity, we stick with a rotation matrix), the linear momentum $P(t)$ of the rigid body, and the angular momentum $L(t)$ of the rigid body.
+
+To update these values from one time step to the next, the derivatives of these values are required. Though it may possibly seem strange that linear and angular momentums are stored rather than linear and angular velocities, the required derivatives are quite simple to calculate this way. By the definition of linear momentum:
+\begin{equation}
+ v(t) = \frac{P(t)}{m}
+\end{equation}
+where $m$ is the mass of the rigid body. This gives the derivative of $x(t)$. Additionally, the derivative of $P(t)$ is simply $F(t)$, the sum of the forces applied to the object, and the derivative of $L(t)$ is simply $\tau(t)$, the sum of the torques applied to the object.
+
+Finding the derivative of the rotation matrix is a bit more complicated. First, the inertia tensor $I(t)$ is required. As described in ~\cite{pixarnotes}, this is ``the scaling factor between angular momentum [...] and angular velocity''. This inertia tensor is dependent on the rotation of the object, though it can be computed easily as
+\begin{equation}
+ I(t) = R(t)I_{body}R(t)^{T}
+\end{equation}
+where $R(t)$ is the rotation of the object and $I_{body}$ is the inertia tensor of the unrotated object. For a solid sphere,
+\begin{equation}
+ I_{body} =
+   \begin{bmatrix}
+   	\frac{2}{5}mr^2 & 0 & 0\\
+   	0 & \frac{2}{5}mr^2 & 0\\
+   	0 & 0 & \frac{2}{5}mr^2\\
+   \end{bmatrix}
+\end{equation}
+where $m$ is the mass and $r$ is the radius of the sphere.
+
+Now that the inertia tensor $I(t)$ has been found, the angular velocity $\omega(t)$ can be found:
+\begin{equation}
+\omega(t) = I(t)^{-1}L(t)
+\end{equation}
+Since finding matrix inverses can be costly, this can be implemented easier by noting that, for rotation matrices,
+\begin{equation}
+R(t)^{T} = R(t)^{-1}
+\end{equation}
+which gives:
+\begin{equation}
+I(t)^{-1} = (R(t)I_{body}R(t)^{T})^{-1} = R(t)I_body^{-1}R(t)^{T}
+\end{equation}
+Since $I_body$ is constant for a rigid body, so is $I_body^{-1}$, so the inverse only needs to be calculated once.
+
+Finally, the derivative of the rotation matrix can be found, which is $\omega(t)^{\star}R(t)$.
+
+Having found the derivatives of the four values stored for each rigid body, any time integration scheme can be used to advance the rigid bodies through the simulation.
+
+For additional detail on how these values are calculated, as well as a discussion on using quaternions rather than rotation matrices, see sections 2, 3, and 4 of the Rigid Body Dynamics chapter of ~\cite{pixarnotes}.
 
 \section{Exposition}
-
-Lorem ipsum dolor sit amet, consectetur adipisicing elit, sed do
-eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad
-minim veniam, quis nostrud exercitation ullamco laboris nisi ut
-aliquip ex ea commodo consequat. Duis aute irure dolor in
-reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla
-pariatur. Excepteur sint occaecat cupidatat non proident, sunt in
-culpa qui officia deserunt mollit anim id est laborum.
-
-Lorem ipsum dolor sit amet, consectetur adipisicing elit, sed do
-eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad
-minim veniam, quis nostrud exercitation ullamco laboris nisi ut
-aliquip ex ea commodo consequat. Duis aute irure dolor in
-reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla
-pariatur. Excepteur sint occaecat cupidatat non proident, sunt in
-culpa qui officia deserunt mollit anim id est laborum.
-
-Lorem ipsum dolor sit amet, consectetur adipisicing elit, sed do
-eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad
-minim veniam, quis nostrud exercitation ullamco laboris nisi ut
-aliquip ex ea commodo consequat. Duis aute irure dolor in
-reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla
-pariatur. Excepteur sint occaecat cupidatat non proident, sunt in
-culpa qui officia deserunt mollit anim id est laborum.
 
 \begin{equation}
  \sum_{j=1}^{z} j = \frac{z(z+1)}{2}
@@ -233,23 +252,7 @@ x & \ll & y_{1} + \cdots + y_{n} \\
   & \leq & z
 \end{eqnarray}
 
-Lorem ipsum dolor sit amet, consectetur adipisicing elit, sed do
-eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad
-minim veniam, quis nostrud exercitation ullamco laboris nisi ut
-aliquip ex ea commodo consequat. Duis aute irure dolor in
-reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla
-pariatur. Excepteur sint occaecat cupidatat non proident, sunt in
-culpa qui officia deserunt mollit anim id est laborum.
-
 \section{Exposition}
-
-Lorem ipsum dolor sit amet, consectetur adipisicing elit, sed do
-eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad
-minim veniam, quis nostrud exercitation ullamco laboris nisi ut
-aliquip ex ea commodo consequat. Duis aute irure dolor in
-reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla
-pariatur. Excepteur sint occaecat cupidatat non proident, sunt in
-culpa qui officia deserunt mollit anim id est laborum.
 
 Lorem ipsum dolor sit amet, consectetur adipisicing elit, sed do
 eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad
@@ -263,64 +266,6 @@ culpa qui officia deserunt mollit anim id est laborum.
   \includegraphics[width=1.5in]{images/samplefigure}
   \caption{Sample illustration.}
 \end{figure}
-Lorem ipsum dolor sit amet, consectetur adipisicing elit, sed do
-eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad
-minim veniam, quis nostrud exercitation ullamco laboris nisi ut
-aliquip ex ea commodo consequat. Duis aute irure dolor in
-reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla
-pariatur. Excepteur sint occaecat cupidatat non proident, sunt in
-culpa qui officia deserunt mollit anim id est laborum.
-
-Lorem ipsum dolor sit amet, consectetur adipisicing elit, sed do
-eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad
-minim veniam, quis nostrud exercitation ullamco laboris nisi ut
-aliquip ex ea commodo consequat. Duis aute irure dolor in
-reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla
-pariatur. Excepteur sint occaecat cupidatat non proident, sunt in
-culpa qui officia deserunt mollit anim id est laborum.
-
-Lorem ipsum dolor sit amet, consectetur adipisicing elit, sed do
-eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad
-minim veniam, quis nostrud exercitation ullamco laboris nisi ut
-aliquip ex ea commodo consequat. Duis aute irure dolor in
-reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla
-pariatur. Excepteur sint occaecat cupidatat non proident, sunt in
-culpa qui officia deserunt mollit anim id est laborum.
-
-\section{Exposition}
-
-Lorem ipsum dolor sit amet, consectetur adipisicing elit, sed do
-eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad
-minim veniam, quis nostrud exercitation ullamco laboris nisi ut
-aliquip ex ea commodo consequat. Duis aute irure dolor in
-reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla
-pariatur. Excepteur sint occaecat cupidatat non proident, sunt in
-culpa qui officia deserunt mollit anim id est laborum.
-
-Lorem ipsum dolor sit amet, consectetur adipisicing elit, sed do
-eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad
-minim veniam, quis nostrud exercitation ullamco laboris nisi ut
-aliquip ex ea commodo consequat. Duis aute irure dolor in
-reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla
-pariatur. Excepteur sint occaecat cupidatat non proident, sunt in
-culpa qui officia deserunt mollit anim id est laborum.
-
-Lorem ipsum dolor sit amet, consectetur adipisicing elit, sed do
-eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad
-minim veniam, quis nostrud exercitation ullamco laboris nisi ut
-aliquip ex ea commodo consequat. Duis aute irure dolor in
-reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla
-pariatur. Excepteur sint occaecat cupidatat non proident, sunt in
-culpa qui officia deserunt mollit anim id est laborum.
-
-Lorem ipsum dolor sit amet, consectetur adipisicing elit, sed do
-eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad
-minim veniam, quis nostrud exercitation ullamco laboris nisi ut
-aliquip ex ea commodo consequat. Duis aute irure dolor in
-reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla
-pariatur. Excepteur sint occaecat cupidatat non proident, sunt in
-culpa qui officia deserunt mollit anim id est laborum.
-
 Lorem ipsum dolor sit amet, consectetur adipisicing elit, sed do
 eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad
 minim veniam, quis nostrud exercitation ullamco laboris nisi ut
