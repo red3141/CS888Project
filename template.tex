@@ -241,6 +241,26 @@ Having found the derivatives of the four values stored for each rigid body, any 
 
 For additional detail on how these values are calculated, as well as a discussion on using quaternions rather than rotation matrices, see sections 2, 3, and 4 of the Rigid Body Dynamics chapter of ~\cite{pixarnotes}.
 
+\section{Magnet Simulation}
+
+We now describe the basic concepts required to simulate magnets.
+
+\subsection{Calculating Magnetic Induction}
+
+In order to simulate magnets, the forces and torques applied by the magnets need to be calculated. However, computing the forces and torques relies on finding the magnetic induction, so this is covered first.
+
+We first consider the case of a small magnetic dipole. Let $r_O$ be the location of the dipole, and let the vector $m$ be the magnetization of the dipole. The length of $m$ defines the strength of the magnetic dipole, and the direction of $m$ is the direction in which the north pole of the dipole points. Then the magnetic induction $B(r)$ caused by this magnetic dipole at a point $r$ is:
+\begin{equation}
+B(r) = \frac{\mu_0}{4\pi}\left[\frac{3n(n\cdot m) - m}{\left|r - r_O\right|^3}\right]
+\end{equation}
+where $n$ is a unit vector pointing in the same direction as $(r - r_O)$.
+
+This equation can be used to approximate the magnetic induction caused by magnets with volume. Large magnets can be divided up into many smaller components, with each component's magnetic properties being treated as a dipole at its centre.
+
+Given a set of magnets, the total magnetic induction at a point can be found by simply summing the magnetic inductions caused by each component of each magnet. Since the total magnetic induction can be found at any point in the scene, and since this magnetic induction is a vector, any iterative method can be used to draw a series of line segments approximating the magnetic induction lines. This produces the familiar loops often shown in diagrams of magnets. In the examples below, starting points were chosen on the magnets, and an explicit forward Euler iterative scheme was used to advance the iteration.
+
+\subsection{Calculating Magnetic Forces and Torques}
+
 \section{Exposition}
 
 \begin{equation}
