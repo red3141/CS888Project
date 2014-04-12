@@ -42,6 +42,8 @@
 
 \documentclass[tog]{acmsiggraph}
 
+\usepackage{siunitx}
+
 %%% Definitions and commands that begin with ``\TOG'' are meant to be used
 %%% in the preparation of papers to be presented in the Technical Papers
 %%% program at one of our annual flagship events - SIGGRAPH and SIGGRAPH 
@@ -126,8 +128,6 @@
 
 This report describes the physics-based animation concepts required to transform a simple particle simulator into a somewhat less simple magnet simulator. In particular, there are four concepts required to perform this transformation. First, since magnets attract each other, they will inevitably come into contact. This requires collision detection and handling. Second, magnets rotate and move about during the simulation. This requires implementing the rigid body equations of motion. Third, magnetic forces and torques need to be calculated so that the motion of the magnets can be determined. To do this, the magnetic induction caused by the magnets at arbitrary points must be calculated. The magnetic induction can also be used to draw the familiar magnetic field lines. Finally, the magnetic forces and torques must be applied to the magnets.
 
-As magnetism is a much less frequently explored area in physics-based animation than rigid body motion, the focus will be on the latter two concepts.
-
 %Citations can be done this way~\cite{Jobs95} or this more concise 
 %way~\shortcite{Jobs95}, depending upon the application.
 
@@ -186,7 +186,7 @@ The first concept from rigid body dynamics that is explained is collision detect
 
 Before the positions and velocities of objects can be adjusted to account for collisions, the collisions must be detected. For spheres, detecting collisions is quite simple: if the distance between the centres of two spheres is less than the sum of their radii, then the spheres are intersecting, so they have collided.
 
-For other shapes, collision detection is more complicated than it is for spheres, because other shapes are not as uniform. For general convex polyhedra, one method of testing for intersections is separating planes. As explained in ~\cite{pixarnotes}, if two convex polyhedra are non-intersecting, ``then a separating plane exists with the following property: either the plane contains a face of one of the polyhedra, or the plane contains an edge from one of the polyhedra and is parallel to an edge of the other polyhedra.'' Although finding these separating planes can take quite a bit of time, they can frequently be reused, since they can be associated with a face or an edge of a polyhedra. For more information on general collision detection, see Section 7 of the rigid body dynamics chapter of ~\shortcite{pixarnotes}.
+For other shapes, collision detection is more complicated than it is for spheres, because other shapes are not as uniform. For general convex polyhedra, one method of testing for intersections is separating planes. As explained in ~\cite{pixarnotes}, if two convex polyhedra are non-intersecting, ``then a separating plane exists with the following property: either the plane contains a face of one of the polyhedra, or the plane contains an edge from one of the polyhedra and is parallel to an edge of the other polyhedra.'' Although finding these separating planes can take quite a bit of time, they can frequently be reused, since they can be associated with a face or an edge of a polyhedra. For more information on general collision detection, see Section 7 of the rigid body dynamics chapter of ~\cite{pixarnotes}.
 
 One method of handling the collisions is using penalty forces. This method allows objects to inter-penetrate, but when they do, a force is applied to the two objects to push them apart. This force is proportional to the distance the objects have inter-penetrated, so that the more the objects overlap, the stronger the force is that pushes them apart. That is, the force applied on object A for overlapping object B is:
 \begin{equation}
@@ -253,13 +253,37 @@ We first consider the case of a small magnetic dipole. Let $r_O$ be the location
 \begin{equation}
 B(r) = \frac{\mu_0}{4\pi}\left[\frac{3n(n\cdot m) - m}{\left|r - r_O\right|^3}\right]
 \end{equation}
-where $n$ is a unit vector pointing in the same direction as $(r - r_O)$.
+where $n$ is a unit vector pointing in the same direction as $(r - r_O)$. $\mu_0$ is the magnetic constant \SI[per-mode=fraction]{4\pi e-7}{\volt \second \per \ampere \per \metre}.
 
 This equation can be used to approximate the magnetic induction caused by magnets with volume. Large magnets can be divided up into many smaller components, with each component's magnetic properties being treated as a dipole at its centre.
 
 Given a set of magnets, the total magnetic induction at a point can be found by simply summing the magnetic inductions caused by each component of each magnet. Since the total magnetic induction can be found at any point in the scene, and since this magnetic induction is a vector, any iterative method can be used to draw a series of line segments approximating the magnetic induction lines. This produces the familiar loops often shown in diagrams of magnets. In the examples below, starting points were chosen on the magnets, and an explicit forward Euler iterative scheme was used to advance the iteration.
 
 \subsection{Calculating Magnetic Forces and Torques}
+
+As explained in ~\cite{Thomaszewski:2008:MIM}, the force $F$ and torque $T$ applied by a magnetic induction $B$ on a dipole with magnetization $m$ are approximated by:
+\begin{equation}
+F = \nabla(m \cdot B)
+\end{equation}
+\begin{equation}
+T = m \times B
+\end{equation}
+
+These two equations can be combined with the calculation of $B(r)$ by summing (8) over all components of all magnets that are not the magnet that the forces and torques are being calculated for. This gives the following equations for calculating the forces and torques applied to a component $k$ of a magnet:
+\begin{equation}
+\begin{split}
+F_k = \frac{\mu_0}{4\pi}\sum_{i=1}^N \frac{1}{\left|r_k - r_i\right|^4}\left[-15n_{ik}\bigl((m_k \cdot n_{ik})(m_i \cdot n_{ik})\bigr) \right. \\
+\left. + 3n_{ik}(m_k \cdot m_i) + 3\bigl(m_k(m_i \cdot n_{ik}) + m_i(m_k \cdot n_{ik})\bigr)\right]
+\end{split}
+\end{equation}
+\begin{equation}
+T_k = \frac{\mu_0}{4\pi}\sum_{i=1}^N \left[ \frac{3(m_k \times n_{ik})(m_i \cdot n_{ik}) - m_k \times m_i}{\left| r_k - r_i \right|^3} \right]
+\end{equation}
+Note that subscripts of $k$ indicate values corresponding to the component $k$. Also note that the summation is over the components of the magnets that do not contain the component $k$. As in previous equations, $r_j$ is the location of the component $j$, and $m_j$ is the magnetization of the component $j$. $n_{ik}$ is the unit vector pointing from the location of the component $i$ to the location of the component $k$.
+
+One interesting thing to note about these equations is the exponent on the $\frac{1}{\left|r_k - r_i\right|^4}$ factor. For the force equation, the exponent is $4$, while in the torque equation, the exponent is $3$. Thus, if two magnets are far apart, the torque will be much larger than the force. This causes the magnets to rotate, aligning opposite poles, more than move towards each other. This can be seen in the example animations.
+
+For further information about calculating magnetic induction, forces, and torques, an interested reader is encouraged to see ~\cite{Thomaszewski:2008:MIM}.
 
 \section{Exposition}
 
