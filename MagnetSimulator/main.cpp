@@ -8,6 +8,7 @@
 #include "gl/glu.h"
 #include "SphereMagnet.h"
 #include "MeshMagnetElement.h"
+#include "BMPWriter.h"
 
 using namespace std;
 
@@ -23,7 +24,7 @@ bool filming = false;
 bool running = false;
 bool drawingInduction = false;
 
-char * sgifileformat;
+char * bmpfileformat;
 
 std::vector<SphereMagnet*> particles;
 std::vector<std::vector<MeshMagnetElement> > immobileMagnets;
@@ -430,7 +431,18 @@ void set_lights(int object)
 void timer(int value)
 {
    if(filming) {
-      Gluvi::sgi_screenshot(sgifileformat, frame);
+		char* bmpfile = new char[255];
+		sprintf(bmpfile, bmpfileformat, frame);
+		BMPWriter writer(bmpfile);
+
+		for(int y = 0; y < 480; ++y) {
+			for(int x = 0; x < 720; ++x) {
+				unsigned char pixel[4];
+				glReadPixels(x, y, 1, 1, GL_RGB, GL_UNSIGNED_BYTE, pixel);
+				writer.writePixel(pixel[0], pixel[1], pixel[2]);
+			}
+		}
+		delete[] bmpfile;
    }
     
    if(filming || running) {
@@ -594,11 +606,11 @@ int main(int argc, char **argv)
    Gluvi::StaticText frametext(frame_number.c_str());
    Gluvi::root.list.push_back(&frametext);
 
-   sgifileformat = new char[255];
-   sprintf(sgifileformat, "screenshot%%04d.sgi");
-   printf("%s\n", sgifileformat);
+   bmpfileformat = new char[255];
+   sprintf(bmpfileformat, "screenshot%%04d.bmp");
+   printf("%s\n", bmpfileformat);
 
-   MovieButton movie("(f)ilm", sgifileformat);
+   MovieButton movie("(f)ilm", bmpfileformat);
    Gluvi::root.list.push_back(&movie);
 
    RunButton run("(r)un");
