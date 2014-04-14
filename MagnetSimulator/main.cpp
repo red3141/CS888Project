@@ -443,6 +443,7 @@ void timer(int value)
 			}
 		}
 		delete[] bmpfile;
+
    }
     
    if(filming || running) {
@@ -450,7 +451,6 @@ void timer(int value)
       glutTimerFunc(10, timer, 0);
       glutPostRedisplay();
    }
-
 }
 
 
@@ -607,7 +607,7 @@ int main(int argc, char **argv)
    Gluvi::root.list.push_back(&frametext);
 
    bmpfileformat = new char[255];
-   sprintf(bmpfileformat, "screenshot%%04d.bmp");
+   sprintf(bmpfileformat, "MulticomponentLines/screenshot%%04d.bmp");
    printf("%s\n", bmpfileformat);
 
    MovieButton movie("(f)ilm", bmpfileformat);
@@ -650,17 +650,17 @@ int main(int argc, char **argv)
    
    // Three repulsing magnets
    /*particles.push_back(new SphereMagnet(Vec3d(0.3, 0.5, 0.5), Vec3d(0.0, 0.0, 0.0), mass, magnetStrength, Vec3d(1.0, 0.0, 0.0)));
-   particles.push_back(new SphereMagnet(Vec3d(0.7, 0.51, 0.5), Vec3d(0.0, 0.0, 0.0), mass, magnetStrength, Vec3d(-1.0, 0.0, 0.0)));
+   particles.push_back(new SphereMagnet(Vec3d(0.7, 0.5, 0.5), Vec3d(0.0, 0.0, 0.0), mass, magnetStrength, Vec3d(-1.0, 0.0, 0.0)));
    particles.push_back(new SphereMagnet(Vec3d(0.9, 0.5, 0.5), Vec3d(0.0, 0.0, 0.0), mass, magnetStrength, Vec3d(1.0, 0.0, 0.0)));*/
 
    // A demonstration of two magnets quickly orienting themselves, and then moving towards each other.
-	particles.push_back(new SphereMagnet(Vec3d(0.2, 0.3, 0.5), Vec3d(0.0, 0.0, 0.0), mass, magnetStrength, Vec3d(0.0, 1.0, 0.0)));
-	particles.push_back(new SphereMagnet(Vec3d(0.8, 0.7, 0.5), Vec3d(0.0, 0.0, 0.0), mass, magnetStrength, Vec3d(0.0, 1.0, 0.0)));
+	/*particles.push_back(new SphereMagnet(Vec3d(0.2, 0.3, 0.5), Vec3d(0.0, 0.0, 0.0), mass, magnetStrength, Vec3d(0.0, 1.0, 0.0)));
+	particles.push_back(new SphereMagnet(Vec3d(0.8, 0.7, 0.5), Vec3d(0.0, 0.0, 0.0), mass, magnetStrength, Vec3d(0.0, 1.0, 0.0)));*/
 
    // A demonstration of a more complicated magnet.
    // Set up the immobile magnet.
-   /*createRingMagnet();
-   particles.push_back(new SphereMagnet(Vec3d(0.5, 0.1, 0.5), Vec3d(0.0, 0.0, 0.0), mass, magnetStrength, Vec3d(1.0, 0.0, 0.0)));*/
+   createRingMagnet();
+   particles.push_back(new SphereMagnet(Vec3d(0.5, 0.1, 0.5), Vec3d(0.0, 0.0, 0.0), mass, magnetStrength, Vec3d(1.0, 0.0, 0.0)));
 
    Gluvi::run();
    return 0;
