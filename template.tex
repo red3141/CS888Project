@@ -111,10 +111,10 @@
 %%% may move the copyright space to the bottom of the right-hand column
 %%% on the first page of your formatted output. This is acceptable.
 
-%% \teaser{
-%%   \includegraphics[height=1.5in]{images/sampleteaser}
-%%   \caption{Spring Training 2009, Peoria, AZ.}
-%% }
+ \teaser{
+   \includegraphics[height=1.5in]{images/MagnetImage1}
+   \caption{Two magnets rotate to align their opposing poles and move towards each other}
+ }
 
 %%% The ``\maketitle'' command uses the author and title information 
 %%% defined above, and prepares the formatted title.
@@ -287,54 +287,43 @@ For further information about calculating magnetic induction, forces, and torque
 
 \section{Results}
 
-The results shown in the included video are now discussed. In all of the animations, the wireframe cube has a side length of 1 metre. The spheres have a radius of 5 centimetres, a mass of 1 kilogram, and a magnetic moment of 300 joules per tesla.
+The results shown in the included video are now discussed. In all of the animations, the wireframe cube has a side length of 1 metre. The spheres have a radius of 5 centimetres, a mass of 1 kilogram, and a magnetic moment of 300 joules per tesla. For each animation, around 100 time steps were used for each second of animation, and each second of animation corresponds to approximately 0.1 seconds in the simulation. That is, the animations are shown at one-tenth speed.
 
-The first animation clip is of three single component, spherical magnets in a line. These magnets are aligned so that they are all attracted towards each other. Since the magnets are evenly spaced out, the centre magnet stays stationary, as expected. When the magnets come into contact, the penalty forces push them apart again. After the second contact, the magnets bounce farther apart than they did after the first contact. The reason for this is discussed in the next section.
+The first animation is of three single component, spherical magnets in a line. These magnets are aligned so that they are all attracted towards each other. Since the magnets are evenly spaced out, the centre magnet stays stationary, as expected. When the magnets come into contact, the penalty forces push them apart again. After the second contact, the magnets bounce farther apart than they did after the first contact. The reason for this is discussed in the next section.
 
-<Discuss other animations>
+The second animation is similar to the first animation, except the spheres are not evenly spaced, and they are aligned to repulse each other. Note that for this animation, the magnetic induction lines close the magnets tend to loop back to the opposite pole of the same magnet, rather than go to the opposing pole of a different magnet, as they do in the first animation. This is how the magnetic field lines are expected to look for these situations.
 
-\section{Exposition}
-
-\begin{equation}
- \sum_{j=1}^{z} j = \frac{z(z+1)}{2}
-\end{equation}
-
-\begin{eqnarray}
-x & \ll & y_{1} + \cdots + y_{n} \\
-  & \leq & z
-\end{eqnarray}
-
-\section{Exposition}
-
-Lorem ipsum dolor sit amet, consectetur adipisicing elit, sed do
-eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad
-minim veniam, quis nostrud exercitation ullamco laboris nisi ut
-aliquip ex ea commodo consequat. Duis aute irure dolor in
-reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla
-pariatur. Excepteur sint occaecat cupidatat non proident, sunt in
-culpa qui officia deserunt mollit anim id est laborum.
 \begin{figure}[ht]
   \centering
-  \includegraphics[width=1.5in]{images/samplefigure}
-  \caption{Sample illustration.}
+  \includegraphics[width=3.0in]{images/MagnetImage2}
+  \caption{The magnetic induction lines for attracting (left) and repulsing (right) magnets}
 \end{figure}
-Lorem ipsum dolor sit amet, consectetur adipisicing elit, sed do
-eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad
-minim veniam, quis nostrud exercitation ullamco laboris nisi ut
-aliquip ex ea commodo consequat. Duis aute irure dolor in
-reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla
-pariatur. Excepteur sint occaecat cupidatat non proident, sunt in
-culpa qui officia deserunt mollit anim id est laborum.
+
+The third animation demonstrates how, when two magnets are far apart, the interaction between them is dominated by the torques. In this animation, the magnets turn so that their opposing poles are facing each other much faster than the magnets move towards each other. One might notice that when the two magnets collide, they bounce back much less than the magnets do in the first animation. Again, the reason for this is discussed in the following section.
+
+The final animation shows a stationary, multi-component horseshoe magnet and a single spherical magnet. The magnet is placed an equal distance from the two ends of the horseshoe magnet. This results in the horizontal magnetic forces on the sphere cancelling out, causing the sphere to oscillate up and down. Because there is no force damping the spherical magnet's motion, it continues oscillating without ever stabilizing directly between the ends of the horseshoe magnet, as it would in real life.
+
+\begin{figure}[ht]
+  \centering
+  \includegraphics[width=3.0in]{images/MagnetImage3}
+  \caption{A spherical magnet oscillates between the ends of a horseshoe magnet}
+\end{figure}
+
+\section{Areas for Improvement and Future Work}
+
+As mentioned in the last section, when the magnets collide, the results are not consistent. This is because of how the penalty force method of handling collisions works. If the magnets happen to overlap only a little bit, the penalty forces will be very small, resulting in only a small bounce. If the magnets happen to overlap a lot, the penalty forces will be very large, resulting in a very violent bounce. These differences in overlap for different collisions occur because of the variations in how fast the magnets move, resulting in a difference in how far the magnets move in a single time step. This is particularly a problem when simulating magnets because the magnetic forces increase the closer the magnets are together. This can cause the magnets to be moving very fast when the magnets collide.
+
+There are a few ways this issue could be solved, or at least lessened. One way to lessen the impact of this issue is to use smaller time steps. This will cause the simulations to be slower, which is undesirable. Some time can be saved, however, by realizing that the small time steps are only required when the magnets collide. Checking the minimum distance between any two magnets and lowering the length of the time steps only when two magnets are near each other can save some simulations time. One way to solve (and not merely reduce the impact of) this problem is to use a more physically accurate collision handling method, such as not allowing the magnets to interpenetrate at all, and instead finding the exact time of the collision and handling the collision with impulses.
+
+Another area for improvement with the collisions is that contact is not handled. Currently, the magnets will continue bouncing off each other forever, instead of coming to rest in contact with each other.
+
+When drawing the magnetic induction lines, occasionally a very long, straight line will occur due to a large magnetic induction at a point. These points occur only inside of the magnets. Thus, some work could be done to detect these extremely large magnetic induction values and not draw them, removing this incorrect visual artifact.
+
+Although arbitrarily shaped meshes were demonstrated in the animations, they are not currently fully handled in the included code. Collisions with these arbitrarily shaped magnets is not handled in the code. There are also a number of places in the code where the magnets are assumed to be spheres, so the arbitrarily shaped magnets are currently required to remain stationary. This is another area of future work for this project.
 
 \section{Conclusion}
 
-Lorem ipsum dolor sit amet, consectetur adipisicing elit, sed do
-eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad
-minim veniam, quis nostrud exercitation ullamco laboris nisi ut
-aliquip ex ea commodo consequat. Duis aute irure dolor in
-reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla
-pariatur. Excepteur sint occaecat cupidatat non proident, sunt in
-culpa qui officia deserunt mollit anim id est laborum.
+The basics of rigid body dynamics and simulating magnets have been presented. Though there are many improvements that can be made to the methods presented here, this report provides a useful starting point for simulating magnets.
 
 \section*{Acknowledgements}
 
