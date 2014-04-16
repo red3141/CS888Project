@@ -128,7 +128,6 @@ void drawMagneticInductionLines() {
 		}
 	}
 
-	// TODO: this code is almost identical to the above code; clean it up.
 	for(unsigned int i = 0; i < immobileMagnets.size(); ++i) {
 		for(unsigned int j = 0; j < immobileMagnets[i].size(); ++j) {
 			vector<Vec3d> startingPoints = immobileMagnets[i][j].getMagneticInductionStartPoints();
@@ -214,13 +213,6 @@ void advance_sim() {
       //floor
 	  if(position[1] < 0 && linearMomentum[1] < 0) {
 		 linearMomentum[1] *= -coeff_restitution;
-
-		 // As an example, apply a force opposing motion when the magnet hits the ground.
-		 /*Vec3d force(-linearMomentum[0], 0, -linearMomentum[2]);
-		 linearMomentum += timestep * force;
-		 Vec3d locationOfForceApplication = position + Vec3d(0, -particles[i]->getRadius() , 0);
-		 Vec3d torque = cross((locationOfForceApplication - position), force);
-		 angularMomentum += timestep * torque;*/
 	  }
 
       //other walls
@@ -588,7 +580,6 @@ void keyPress(unsigned char key, int x, int y) {
 }
 
 
-
 Gluvi::Target3D* cam_local;
 
 int main(int argc, char **argv)
@@ -607,7 +598,7 @@ int main(int argc, char **argv)
    Gluvi::root.list.push_back(&frametext);
 
    bmpfileformat = new char[255];
-   sprintf(bmpfileformat, "MulticomponentLines/screenshot%%04d.bmp");
+   sprintf(bmpfileformat, "screenshot%%04d.bmp");
    printf("%s\n", bmpfileformat);
 
    MovieButton movie("(f)ilm", bmpfileformat);
@@ -624,24 +615,6 @@ int main(int argc, char **argv)
    int seed = 0;
    double mass = 1.0;
    double magnetStrength = 300.0;
-   /*for(int i = 0; i < 3; ++i) {
-      Vec3d position;
-      position[0] = randhashf(++seed,0,1);
-      position[1] = randhashf(++seed,0,1);
-      position[2] = randhashf(++seed,0,1);
-	  //position[0] = 0.0 + (double)i * 0.1;
-	  //position[1] = 0.0 + (double)i * 0.1;
-	  //position[2] = 0.0 + (double)i * 0.1;
-	  Vec3d linearMomentum;
-	  //linearMomentum[0] = mass * randhashf(++seed,-5,5);
-      //linearMomentum[1] = mass * randhashf(++seed,-5,5);
-      //linearMomentum[2] = mass * randhashf(++seed,-5,5);
-	  linearMomentum[0] = 0.0;
-      linearMomentum[1] = 0.0;
-      linearMomentum[2] = 0.0;
-
-	  particles.push_back(new SphereMagnet(position, linearMomentum, mass, magnetStrength));
-   }*/
 
    // Three attracting magnets
    /*particles.push_back(new SphereMagnet(Vec3d(0.1, 0.5, 0.5), Vec3d(0.0, 0.0, 0.0), mass, magnetStrength, Vec3d(1.0, 0.0, 0.0)));
